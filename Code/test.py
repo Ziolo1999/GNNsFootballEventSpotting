@@ -25,3 +25,5 @@ dataset.generate_encodings()
 dataset._generate_all_features()
 dataset.animate_game(interval=1)
 
+[i for i,x in enumerate(files) if x.name=="BEL-CAN"]
+files[50]
