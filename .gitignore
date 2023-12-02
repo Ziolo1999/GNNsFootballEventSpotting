@@ -4,6 +4,13 @@
 .AppleDouble
 .LSOverride
 
+# data
+*__pycache__
+/football_games/
+/SoccerNetData/
+/SoccerNetv2-DevKit/
+/WorkJolan/
+/ActionSpotting/
 # Icon must end with two \r
 Icon
 
