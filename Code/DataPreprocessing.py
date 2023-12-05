@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.animation as animation
 from mplsoccer.pitch import Pitch
 import logging
+import seaborn as sns
 
 class Dataset:
     """ Data class which will be used to preprocess positional data """
@@ -111,6 +112,8 @@ class Dataset:
 
     
     def generate_encodings(self):
+        self.player_encoder = {}
+        self.player_decoder = {}
         favourable_counter = 0
         opposing_counter = 11
         for frame in self.dataset.frames:
@@ -125,10 +128,30 @@ class Dataset:
                         self.player_encoder[player.player_id] = opposing_counter
                         self.player_decoder[opposing_counter] = player.player_id
                         opposing_counter += 1
-            if len(self.player_encoder.keys()):
+            if len(self.player_encoder.keys())==22:
                 break
         # print(f"All players detected at the {frame.timestamp} timestamp")
     
+    def _get_player_occurence(self):
+        # get starting players and note their occurence
+        starting_players = list(map(lambda x: x.player_id, self.dataset.frames[0].players_coordinates.keys()))
+        starting_frame = [[0] for x in range(len(starting_players))]
+        frame_borders = dict(zip(starting_players, starting_frame))
+        # generate substitutions
+        substitutions = self.substitution_detection()
+        # record frames when swap occured
+        for vals in substitutions.values():
+            for frame_index, frame_swaps in vals.items():
+                for swap in frame_swaps:
+                    frame_borders[swap[0]].append(frame_index)
+                    frame_borders[swap[1]] = [frame_index]
+        # assign last fram for players present at the end
+        for _, val in frame_borders.items():
+            if len(val) == 1:
+                val.append(len(self.dataset.frames)-1)
+        return frame_borders
+
+
     def _get_player_coordinates(self, frame):  
         coord_matrix = np.zeros((22,2))
         ball_coord = np.array([frame.ball_coordinates.x, frame.ball_coordinates.y])
@@ -176,17 +199,25 @@ class Dataset:
             return ball_coord
     
     def _get_game_details(self,frame):
-        return frame.timestamp
-    
+        if frame.period.id == 1:
+            return frame.timestamp
+        elif frame.period.id == 2:
+            return frame.timestamp + 45
+        
     def _player_violation(self):
         player_violation = []
         for frame in self.dataset.frames:
+            if frame.period.id == 1:
+                timestamp = frame.timestamp
+            elif frame.period.id == 2:
+                timestamp = frame.timestamp+45
             # check if all players are present in the current frame:
             if len(frame.players_coordinates.keys())<22:
-                player_violation.append(frame.timestamp)
+                player_violation.append(timestamp)
         return player_violation
     
     def _generate_all_features(self):
+        self.generate_encodings()
         self.matrix = []
         self.ball_coords = []
         self.game_details = []
@@ -309,6 +340,46 @@ class Dataset:
            ani.save(save_dir, writer='ffmpeg') 
         else:
             plt.show()
+
+    def generate_heatmaps(self):
+        _ = self._generate_all_features()
+        pitch = Pitch(pitch_color="grass", line_color='white',
+              stripe=False) 
+        # get scalars to represent players position on the map
+        scalars = (pitch.dim.pitch_length, pitch.dim.pitch_width)
+        # get dictionary discribing during which frame the player occured
+        frame_borders = self._get_player_occurence()
+
+        # Determine Belgium and opponent players
+        if self.belgium_role == "home":
+            belgium_players = [home for home in frame_borders.keys() if "home" in home]
+            belgium_cnt = len(belgium_players)
+            opponent_players = [away for away in frame_borders.keys() if "away" in away]
+            opponent_cnt = len(opponent_players)
+        else:
+            belgium_players = [away for away in frame_borders.keys() if "away" in away]
+            belgium_cnt = len(belgium_players)
+            opponent_players = [home for home in frame_borders.keys() if "home" in home]
+            opponent_cnt = len(opponent_players)
+        # plot heatmaps for Belgium 
+        nrows = int(np.ceil(belgium_cnt/4))
+
+        fig, axs = pitch.draw(nrows=nrows, ncols=4, figsize=(8, 6))
+        player_cntr = 0
+        for row in range(nrows):
+            for col in range(4):
+                player = belgium_players[player_cntr]
+                player_cntr += 1
+                player_frame_borders = frame_borders[player]
+                player_id = self.player_encoder[player]
+                x = self.matrix[player_frame_borders[0]:player_frame_borders[1],0,player_id]*scalars[0]
+                y = self.matrix[player_frame_borders[0]:player_frame_borders[1],1,player_id]*scalars[1]
+
+                sns.kdeplot(x=x, y=y, fill=True, cmap="coolwarm", n_levels=50, ax=axs[row,col], zorder=0)
+                axs[row,col].set_aspect('equal')
+                axs[row,col].set_title(player)
+        plt.show()
+
 
 
 
