@@ -10,10 +10,11 @@ import matplotlib.animation as animation
 from mplsoccer.pitch import Pitch
 import logging
 import seaborn as sns
+from matplotlib.collections import LineCollection
 
 class Dataset:
     """ Data class which will be used to preprocess positional data """
-    def __init__(self, sample_rate: float, home, alive: bool = False) -> None:
+    def __init__(self, sample_rate: float, name, alive: bool = False) -> None:
         self.alive = alive
         self.dataset = None
         self.sample_rate = sample_rate
@@ -38,12 +39,15 @@ class Dataset:
         self.fps = 4   
 
         # helpers for data preprocessing
-        self.player_encoder = {}
-        self.player_decoder = {}
-        if home == "BEL":
+        if name[:3] == "BEL":
             self.belgium_role = "home"
         else:
             self.belgium_role = "away"
+        # discovered during data exploration
+        self.name = name
+        self.red_card_games = ['BEL-GRE','BEL-RUS', 'AUS-BEL']
+        self.missing_players_games = ['NED-BEL', 'ICE-BEL']
+
 
     def open_dataset(self, datafilepath: str, metafilepath: str) -> TrackingDataset:
         """Parse file using kloppy lib and create unique player df
@@ -104,7 +108,6 @@ class Dataset:
                 swapping_players = list(set(current_players_team) - set(old_players_team))
 
                 if len(swapped_players) > 0:
-
                     frames[team_id][index] = list(zip(swapped_players, swapping_players))
             old_players = current_players  
         self.switch_frames = frames
@@ -132,7 +135,7 @@ class Dataset:
                 break
         # print(f"All players detected at the {frame.timestamp} timestamp")
     
-    def _get_player_occurence(self):
+    def _get_player_presence(self):
         # get starting players and note their occurence
         starting_players = list(map(lambda x: x.player_id, self.dataset.frames[0].players_coordinates.keys()))
         starting_frame = [[0] for x in range(len(starting_players))]
@@ -216,8 +219,12 @@ class Dataset:
                 player_violation.append(timestamp)
         return player_violation
     
-    def _generate_all_features(self):
-        self.generate_encodings()
+    def _generate_node_features(self):
+        try:
+            self.player_encoder
+        except AttributeError:
+            self.generate_encodings()
+
         self.matrix = []
         self.ball_coords = []
         self.game_details = []
@@ -283,72 +290,153 @@ class Dataset:
         # get team affiliation
         team_affiliation = np.concatenate((np.zeros((self.matrix.shape[0],11)),np.ones((self.matrix.shape[0],11))), axis=1)
         team_affiliation = np.expand_dims(team_affiliation, axis=1)
-
+        
+        # add red card flag
+        red_flag = np.zeros((self.matrix.shape[0], 1, self.matrix.shape[2]))
+        if self.name in self.red_card_games:
+            red_card_players = []
+            red_card_frames = []
+            for team_vals in self.switch_frames.values():
+                for key, vals in team_vals.items():
+                    if len(vals) == 0:
+                        current_frame_players = set([player.player_id for _, player in enumerate(self.dataset.frames[key].players_coordinates)])
+                        prev_frame_players = set([player.player_id for _, player in enumerate(self.dataset.frames[key-1].players_coordinates)])
+                        red_card_player = prev_frame_players - current_frame_players
+                        red_card_players.append(red_card_player.pop())
+                        red_card_frames.append(key)
+            for red_frame, red_player in zip(red_card_frames, red_card_players):
+                red_flag[red_frame:, :, self.player_encoder[red_player]] = 1
         # concatenate new variables
-        self.matrix = np.concatenate((self.matrix, x_directions, y_directions, movement_direction, avg_position_total, team_affiliation), axis=1)
+        self.matrix = np.concatenate((self.matrix, x_directions, y_directions, movement_direction, avg_position_total, team_affiliation, red_flag), axis=1)
         return player_violation
 
-    def animate_game(self, frame_threshold=None, save_dir=None, interval=1):
-        self._generate_all_features()
+    def _generate_edges(self, threshold:float=0.2):
+        try:
+            self.matrix
+        except AttributeError:
+            _ = self._generate_node_features()
+
+        frame_dim, _, player_dim = self.matrix.shape
+        # calculate distances at x-axis between each player for each frame 
+        x_coords = self.matrix[:,0,:]
+        x_coords = x_coords.reshape(frame_dim,1,player_dim)
+        x_dist = x_coords  - np.transpose(x_coords,(0,2,1))
+        
+        # calculate distances at y-axis between each player for each frame 
+        y_coords = self.matrix[:,1,:]
+        y_coords = y_coords.reshape(frame_dim,1,player_dim)
+        y_dist = y_coords - np.transpose(y_coords,(0,2,1))
+
+        # get final distances
+        difference = x_dist**2+y_dist**2
+        distance = np.sqrt(difference)
+
+        # determine connections
+        distance = np.where(distance < threshold, 1, 0)
+
+        # fill diagonal for each frame with ones
+        player_indx = np.arange(player_dim)
+        distance[:, player_indx, player_indx] = 1
+        self.edges = distance
+
+    def animate_game(self, edge_threshold:float=None, frame_threshold=None, save_dir=None, interval=1):
+        try:
+            self.matrix
+        except AttributeError:
+            _ = self._generate_node_features()
+
+        if edge_threshold:
+            self._generate_edges(threshold=edge_threshold)
+
         # Generate pitch
         pitch = Pitch(pitch_color='grass', line_color='white', stripe=True)
-        fig, ax = pitch.draw()
-
-        # get pitch size
-        x_axis_size = ax.get_xlim()
-        y_axis_size = ax.get_ylim()
 
         # get scalars to represent players position on the map
-        scalars = (x_axis_size[0]+x_axis_size[1], y_axis_size[0]+y_axis_size[1])
-        coords = self.matrix
+        scalars = (pitch.dim.pitch_length, pitch.dim.pitch_width)
+        coords = self.matrix.copy()
         coords[:,0,:] = coords[:,0,:]*scalars[0]
         coords[:,1,:] = coords[:,1,:]*scalars[1]
-        ball_coords = self.ball_coords
+        ball_coords = self.ball_coords.copy()
         ball_coords[:,0] = ball_coords[:,0]*scalars[0]
         ball_coords[:,1] = ball_coords[:,1]*scalars[1]
 
-        # create animation
-        fig, ax = pitch.draw()
+        # create base animation
+        fig, ax = plt.subplots()
+        pitch.draw(ax=ax)
+
+        # create an empty collection for edges
+        edge_collection = LineCollection([], colors='white', linewidths=0.5)
+        # add the collection to the axis
+        ax.add_collection(edge_collection)
+
+        # base scatter boxes
         scat_home = ax.scatter([], [], c="r", s=50)
         scat_away = ax.scatter([], [], c="b", s=50)
         scat_ball = ax.scatter([], [], c="black", s=50)
+        # base title
         timestamp = ax.set_title(f"Timestamp: {0}")
         def init():
             scat_home.set_offsets(np.array([]).reshape(0, 2))
             scat_away.set_offsets(np.array([]).reshape(0, 2))
             scat_ball.set_offsets(np.array([]).reshape(0, 2))
             return (scat_home,scat_away,scat_ball)
-
+        # get update function
         def update(frame):
             scat_home.set_offsets(coords[frame,:,:11].T)
             scat_away.set_offsets(coords[frame,:,11:].T)
             scat_ball.set_offsets(ball_coords[frame])
-            # Convert seconds to minutes and seconds
+            # convert seconds to minutes and seconds
             minutes, seconds = divmod(self.game_details[frame], 60)
-            # Format the output as mm:ss
-            formatted_time = f"{int(np.round(minutes,0))}:{int(np.round(seconds,0))}"
+            # format the output as mm:ss
+            formatted_time = f"{int(np.round(minutes, 0))}:{int(np.round(seconds, 0))}"
             timestamp.set_text(f"Timestamp: {formatted_time}")
-            return (scat_home,scat_away,scat_ball,timestamp)
+            
+            # include edges in the animation
+            if edge_threshold:
+                segments = []
+                row_indices, col_indices = np.where(self.edges[frame] == 1)
+                for i, j in zip(row_indices, col_indices):
+                    segments.append([(coords[frame, 0, i], coords[frame, 1, i]),
+                                    (coords[frame, 0, j], coords[frame, 1, j])])
+                # set all segments at once for the LineCollection
+                edge_collection.set_segments(segments)
+
+            return (scat_home, scat_away, scat_ball, timestamp)
+        
         # get number of iterations
         if frame_threshold != None:
             iterartions = frame_threshold
         else:
             iterartions = self.matrix.shape[0]
 
+        # set order of the plot components
+        scat_home.set_zorder(3) 
+        scat_away.set_zorder(3)
+        scat_ball.set_zorder(3)
+
+        # use animation 
         ani = animation.FuncAnimation(fig=fig, func=update, frames=iterartions, init_func=init, interval=interval)
         if save_dir != None:
            ani.save(save_dir, writer='ffmpeg') 
         else:
             plt.show()
+        # delete data copies
+        del coords
+        del ball_coords
+
 
     def generate_heatmaps(self):
-        _ = self._generate_all_features()
+        try:
+            self.matrix
+        except AttributeError:
+            _ = self._generate_node_features()
+
         pitch = Pitch(pitch_color="grass", line_color='white',
               stripe=False) 
         # get scalars to represent players position on the map
         scalars = (pitch.dim.pitch_length, pitch.dim.pitch_width)
         # get dictionary discribing during which frame the player occured
-        frame_borders = self._get_player_occurence()
+        frame_borders = self._get_player_presence()
 
         # Determine Belgium and opponent players
         if self.belgium_role == "home":
@@ -379,15 +467,3 @@ class Dataset:
                 axs[row,col].set_aspect('equal')
                 axs[row,col].set_title(player)
         plt.show()
-
-
-
-
-      
-
-
-    
-
-
-                    
-            

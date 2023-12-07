@@ -15,6 +15,7 @@ class DataManager():
         #
         self.matches = []
         self.datasets = []
+        self.edges = []
         self.alive = alive
 
         if files is None:
@@ -33,17 +34,18 @@ class DataManager():
         assert len(self.home) == len(self.away)
 
     def read_games(self):
-        """ Reads all games and provides list of matrices that describe each game
+        """ Reads all games and provides list features and edges matrices 
         """
         for f in tqdm(self.files, desc="Total file count"):
             logging.info(f"Reading file {f.datafile}")
-            dataset = Dataset(1 / 5, f.home, self.alive)
+            dataset = Dataset(1 / 5, f.names, self.alive)
             dataset.open_dataset(f.datafile, f.metafile)
-            dataset.generate_encodings()
-            player_violation = dataset._generate_all_features()
+            player_violation = dataset._generate_node_features()
             if len(player_violation)>0:
-                logging.error(f"Match {f.name} does not have 11 players in the {player_violation} fremes.")
+                logging.warning(f"Match {f.name} does not have 11 players in the {player_violation} fremes.")
+            dataset._generate_edges(threshold=0.2)
             self.datasets.append(dataset.matrix)
+            self.edges.append(dataset.edges)
             self.matches.append(f.name)
             del dataset
     
