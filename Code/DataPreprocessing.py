@@ -55,8 +55,7 @@ class Dataset:
         Args:
             datafilepath (str): filepath
             metafilepath (str): filepath
-            alive (bool, optional): Use only frames were ball is alive. Defaults to False.
-
+            
         Returns:
             TrackingDataset: kloppy dataset
         """
@@ -86,7 +85,11 @@ class Dataset:
         """Find the frames per team where there was a substitution
 
         Returns:
-            dict[str, list]: keys: home, away; values: list of frames of substitutions
+            dict[str, dict]: 
+                keys: home, away; 
+                values: dict[int, list]: 
+                    keys: frames when substitution occured
+                    values: list of tuples consisting pairs (swapped, swapping)
         """
         dataset = self.dataset
         frames = {
@@ -220,6 +223,15 @@ class Dataset:
         return player_violation
     
     def _generate_node_features(self):
+        ''' Generates the nodes' features for each frame. The final result is obtained in the self.matrix.
+            It is the 3d matrix which can be desribed as follows:
+            - 1st axis: Frames
+            - 2nd axis: Features
+            - 3rd axis: Players
+            The order of features is as follows: 
+            x-position, y-position, distance to the ball, speed, x-direction, y-direction, movement direction (in radians), order of average position, team affiliation, red card flag.
+            There is also order of players in the matrix. First eleven are the Belgian players, the last 11 are the opponents players.
+        '''
         try:
             self.player_encoder
         except AttributeError:
@@ -308,6 +320,16 @@ class Dataset:
                 red_flag[red_frame:, :, self.player_encoder[red_player]] = 1
         # concatenate new variables
         self.matrix = np.concatenate((self.matrix, x_directions, y_directions, movement_direction, avg_position_total, team_affiliation, red_flag), axis=1)
+        
+        # mising player cases discovered at data preprocessing part
+        if self.name in self.missing_players_games:
+            player_violation_frame_indx = []
+            for index, frame in enumerate(self.dataset.frames):
+                # check if all players are present in the current frame:
+                if len(frame.players_coordinates.keys())<22:
+                    player_violation_frame_indx.append(index)
+            self.matrix = np.delete(self.matrix, player_violation_frame_indx, axis=0)
+
         return player_violation
 
     def _generate_edges(self, threshold:float=0.2):
@@ -339,7 +361,7 @@ class Dataset:
         distance[:, player_indx, player_indx] = 1
         self.edges = distance
 
-    def animate_game(self, edge_threshold:float=None, frame_threshold=None, save_dir=None, interval=1):
+    def animate_game(self, edge_threshold:float=None, direction:bool=False, frame_threshold=None, save_dir=None, interval=1):
         try:
             self.matrix
         except AttributeError:
@@ -363,7 +385,7 @@ class Dataset:
         # create base animation
         fig, ax = plt.subplots()
         pitch.draw(ax=ax)
-
+        
         # create an empty collection for edges
         edge_collection = LineCollection([], colors='white', linewidths=0.5)
         # add the collection to the axis
@@ -375,11 +397,24 @@ class Dataset:
         scat_ball = ax.scatter([], [], c="black", s=50)
         # base title
         timestamp = ax.set_title(f"Timestamp: {0}")
+        # base for movement direction
+        if direction:
+            movement_angles_home = self.matrix[0, 6,:11]  
+            movement_angles_away = self.matrix[0, 6,11:] 
+
+            movement_vectors_home = np.array([[np.cos(angle), -np.sin(angle)] for angle in movement_angles_home])
+            movement_vectors_away = np.array([[np.cos(angle), -np.sin(angle)] for angle in movement_angles_away])
+
+            quiver_home = ax.quiver(coords[0,0,:11], coords[0,1,:11], movement_vectors_home[:,0], movement_vectors_home[:,1], width=0.002)
+            quiver_away = ax.quiver(coords[0,0,11:], coords[0,1,11:], movement_vectors_away[:,0], movement_vectors_away[:,1], width=0.002)
+
+
         def init():
             scat_home.set_offsets(np.array([]).reshape(0, 2))
             scat_away.set_offsets(np.array([]).reshape(0, 2))
             scat_ball.set_offsets(np.array([]).reshape(0, 2))
             return (scat_home,scat_away,scat_ball)
+        
         # get update function
         def update(frame):
             scat_home.set_offsets(coords[frame,:,:11].T)
@@ -400,6 +435,19 @@ class Dataset:
                                     (coords[frame, 0, j], coords[frame, 1, j])])
                 # set all segments at once for the LineCollection
                 edge_collection.set_segments(segments)
+            
+            # include movement directions in the animation
+            if direction:
+                movement_angles_home = self.matrix[frame, 6,:11]  
+                movement_angles_away = self.matrix[frame, 6,11:] 
+
+                movement_vectors_home = np.array([[np.cos(angle), -np.sin(angle)] for angle in movement_angles_home])
+                movement_vectors_away = np.array([[np.cos(angle), -np.sin(angle)] for angle in movement_angles_away])
+            
+                quiver_home.set_UVC(movement_vectors_home[:,0],movement_vectors_home[:,1])
+                quiver_home.set_offsets(coords[frame,0:2,:11].T)
+                quiver_away.set_UVC(movement_vectors_away[:,0],movement_vectors_away[:,1])
+                quiver_away.set_offsets(coords[frame,0:2,11:].T)
 
             return (scat_home, scat_away, scat_ball, timestamp)
         
@@ -417,7 +465,7 @@ class Dataset:
         # use animation 
         ani = animation.FuncAnimation(fig=fig, func=update, frames=iterartions, init_func=init, interval=interval)
         if save_dir != None:
-           ani.save(save_dir, writer='ffmpeg') 
+            ani.save(save_dir, writer='ffmpeg') 
         else:
             plt.show()
         # delete data copies
