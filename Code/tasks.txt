@@ -1,0 +1,2 @@
+1) Gather framerate (fps) info and use that to generate proper feature matrix - Used by CALFData and DataManager so they will compatible
+2) 

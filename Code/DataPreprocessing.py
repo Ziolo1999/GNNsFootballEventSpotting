@@ -12,8 +12,8 @@ import logging
 import seaborn as sns
 from matplotlib.collections import LineCollection
 
-class Dataset:
-    """ Data class which will be used to preprocess positional data """
+class DatasetPreprocessor:
+    """ Data class used for preprocessing of the positional data """
     def __init__(self, sample_rate: float, name, alive: bool = False) -> None:
         self.alive = alive
         self.dataset = None
@@ -333,6 +333,9 @@ class Dataset:
         return player_violation
 
     def _generate_edges(self, threshold:float=0.2):
+        """
+        Generates adjacency matrix
+        """
         try:
             self.matrix
         except AttributeError:
@@ -360,6 +363,11 @@ class Dataset:
         player_indx = np.arange(player_dim)
         distance[:, player_indx, player_indx] = 1
         self.edges = distance
+
+    def _generate_annotaions(self):
+        alive = np.array([int(frame.ball_state.value=="alive") for frame in self.dataset.frames])
+        dead = np.ones(alive.shape) - alive
+        self.annotations = np.vstack((alive, dead)).T
 
     def animate_game(self, edge_threshold:float=None, direction:bool=False, frame_threshold=None, save_dir=None, interval=1):
         try:
