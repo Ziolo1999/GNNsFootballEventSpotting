@@ -138,7 +138,6 @@ def getTimestampTargets(labels, num_detections):
     for i in np.arange(labels.shape[0]):
 
         time_indexes, class_values = np.where(labels[i]==0)
-
         counter = 0
 
         for time_index, class_value in zip(time_indexes, class_values):

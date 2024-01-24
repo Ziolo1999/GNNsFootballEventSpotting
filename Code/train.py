@@ -1,6 +1,6 @@
 import logging
 import os
-from metrics_visibility_fast import AverageMeter, average_mAP, NMS
+from metrics_visibility_fast import AverageMeter, average_mAP, NMS, LossHolder
 import time
 from tqdm import tqdm
 import torch
@@ -28,12 +28,14 @@ def trainer(train_loader,
     best_loss = 9e99
     best_metric = -1
 
+    losses = LossHolder()
+
     for epoch in range(max_epochs):
         best_model_path = os.path.join("models", model_name, "model.pth.tar")
 
 
         # train for one epoch
-        loss_training = train(
+        loss_training, loss_seg_training, loss_spot_training = train(
             train_loader,
             model,
             criterion,
@@ -41,10 +43,10 @@ def trainer(train_loader,
             optimizer,
             epoch + 1,
             train = True)
-
+        
         # evaluate on validation set
         with torch.no_grad():
-            loss_validation = train(
+            loss_validation, loss_seg_validation, loss_spot_validation = train(
                 val_loader,
                 model,
                 criterion,
@@ -52,15 +54,18 @@ def trainer(train_loader,
                 optimizer,
                 epoch + 1,
                 train = False)
-
         
-
+        losses.update(loss_training,loss_seg_training,
+                      loss_spot_training,loss_validation,
+                      loss_seg_validation,loss_spot_validation)
+        
         state = {
             'epoch': epoch + 1,
             'state_dict': model.state_dict(),
             'best_loss': best_loss,
             'optimizer': optimizer.state_dict(),
         }
+
         os.makedirs(os.path.join("models", model_name), exist_ok=True)
 
         # Remember best loss and save checkpoint
@@ -113,7 +118,7 @@ def trainer(train_loader,
                 "Plateau Reached and no more reduction -> Exiting Loop")
             break
 
-    return
+    return losses
 
 def train(dataloader,
           model,
@@ -193,7 +198,7 @@ def train(dataloader,
             desc += f'Loss Spot {losses_spotting.avg:.4e} '
             t.set_description(desc)
 
-    return losses.avg
+    return losses.avg, losses_segmentation.avg, losses_spotting.avg
 
 
 # def test(dataloader,model, model_name, save_predictions=False):

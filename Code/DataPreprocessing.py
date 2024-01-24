@@ -367,6 +367,7 @@ class DatasetPreprocessor:
     def _generate_annotaions(self):
         alive = np.array([int(frame.ball_state.value=="alive") for frame in self.dataset.frames])
         dead = np.ones(alive.shape) - alive
+        # self.annotations = np.expand_dims(dead, axis=1)
         self.annotations = np.vstack((alive, dead)).T
 
     def animate_game(self, edge_threshold:float=None, direction:bool=False, frame_threshold=None, save_dir=None, interval=1):

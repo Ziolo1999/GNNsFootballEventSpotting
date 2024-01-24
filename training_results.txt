@@ -1,0 +1,260 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2639
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww28600\viewh18000\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 Train 1: Time 6.259s (it:6.153s) Data:0.521s (it:0.493s) Loss 3.4412e+03 Loss Seg 3.1385e+03 Loss Spot 3.4255e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:56<00:00,  6.26s/it]\
+Evaluate 1: Time 4.629s (it:4.621s) Data:0.532s (it:0.457s) Loss 2.3563e+03 Loss Seg 2.8681e+03 Loss Spot 2.3420e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 | 57/57 [04:23<00:00,  4.63s/it]\
+Train 2: Time 6.251s (it:6.277s) Data:0.529s (it:0.488s) Loss 1.8502e+03 Loss Seg 2.4426e+03 Loss Spot 1.8380e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:56<00:00,  6.25s/it]\
+Evaluate 2: Time 4.576s (it:4.623s) Data:0.535s (it:0.461s) Loss 1.6151e+03 Loss Seg 2.6044e+03 Loss Spot 1.6021e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 | 57/57 [04:20<00:00,  4.58s/it]\
+Train 3: Time 6.240s (it:6.039s) Data:0.534s (it:0.492s) Loss 1.5205e+03 Loss Seg 2.1708e+03 Loss Spot 1.5096e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.24s/it]\
+Evaluate 3: Time 4.437s (it:4.466s) Data:0.499s (it:0.453s) Loss 1.4378e+03 Loss Seg 2.1803e+03 Loss Spot 1.4269e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 | 57/57 [04:12<00:00,  4.44s/it]\
+Train 4: Time 6.279s (it:6.386s) Data:0.582s (it:0.499s) Loss 1.4257e+03 Loss Seg 2.0580e+03 Loss Spot 1.4154e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:57<00:00,  6.28s/it]\
+Evaluate 4: Time 4.566s (it:4.679s) Data:0.498s (it:0.456s) Loss 1.3449e+03 Loss Seg 1.9499e+03 Loss Spot 1.3352e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 | 57/57 [04:20<00:00,  4.57s/it]\
+Train 5: Time 6.316s (it:6.095s) Data:0.586s (it:0.492s) Loss 1.4736e+03 Loss Seg 1.7318e+03 Loss Spot 1.4649e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [06:00<00:00,  6.32s/it]\
+Evaluate 5: Time 4.616s (it:4.738s) Data:0.498s (it:0.457s) Loss 1.6204e+03 Loss Seg 1.4715e+03 Loss Spot 1.6130e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 | 57/57 [04:23<00:00,  4.62s/it]\
+Train 6: Time 6.262s (it:6.247s) Data:0.541s (it:0.501s) Loss 1.4570e+03 Loss Seg 1.6774e+03 Loss Spot 1.4486e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:56<00:00,  6.26s/it]\
+Evaluate 6: Time 4.656s (it:4.655s) Data:0.542s (it:0.461s) Loss 1.4493e+03 Loss Seg 1.4876e+03 Loss Spot 1.4418e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 | 57/57 [04:25<00:00,  4.66s/it]\
+Train 7: Time 6.273s (it:6.248s) Data:0.542s (it:0.498s) Loss 1.4259e+03 Loss Seg 1.5491e+03 Loss Spot 1.4182e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:57<00:00,  6.27s/it]\
+Evaluate 7: Time 4.516s (it:6.935s) Data:0.539s (it:2.599s) Loss 1.4604e+03 Loss Seg 1.4273e+03 Loss Spot 1.4532e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 | 57/57 [04:17<00:00,  4.52s/it]\
+Train 8: Time 6.294s (it:6.339s) Data:0.543s (it:0.498s) Loss 1.3328e+03 Loss Seg 1.4408e+03 Loss Spot 1.3256e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.29s/it]\
+Evaluate 8: Time 4.598s (it:4.702s) Data:0.500s (it:0.456s) Loss 1.3826e+03 Loss Seg 1.3607e+03 Loss Spot 1.3758e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 | 57/57 [04:22<00:00,  4.60s/it]\
+Train 9: Time 6.315s (it:6.195s) Data:0.591s (it:0.497s) Loss 1.3413e+03 Loss Seg 1.3819e+03 Loss Spot 1.3344e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:59<00:00,  6.32s/it]\
+Evaluate 9: Time 4.458s (it:4.461s) Data:0.498s (it:0.453s) Loss 1.3301e+03 Loss Seg 1.3421e+03 Loss Spot 1.3234e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 | 57/57 [04:14<00:00,  4.46s/it]\
+Train 10: Time 37.889s (it:6.191s) Data:0.590s (it:0.494s) Loss 1.2621e+03 Loss Seg 1.4282e+03 Loss Spot 1.2549e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [35:59<00:00, 37.89s/it]\
+Evaluate 10: Time 4.575s (it:4.631s) Data:0.498s (it:0.456s) Loss 1.4476e+03 Loss Seg 1.4160e+03 Loss Spot 1.4405e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:20<00:00,  4.58s/it]\
+Train 11: Time 6.262s (it:6.258s) Data:0.543s (it:0.507s) Loss 1.3151e+03 Loss Seg 1.4926e+03 Loss Spot 1.3076e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:56<00:00,  6.26s/it]\
+Evaluate 11: Time 4.639s (it:4.594s) Data:0.541s (it:0.455s) Loss 1.2272e+03 Loss Seg 1.3712e+03 Loss Spot 1.2204e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:24<00:00,  4.64s/it]\
+Train 12: Time 6.284s (it:6.077s) Data:0.546s (it:0.506s) Loss 1.2461e+03 Loss Seg 1.3599e+03 Loss Spot 1.2393e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.28s/it]\
+Evaluate 12: Time 4.540s (it:4.529s) Data:0.543s (it:0.459s) Loss 1.2900e+03 Loss Seg 1.3903e+03 Loss Spot 1.2831e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:18<00:00,  4.54s/it]\
+Train 13: Time 6.368s (it:6.269s) Data:0.547s (it:0.511s) Loss 1.2276e+03 Loss Seg 1.4026e+03 Loss Spot 1.2206e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [06:02<00:00,  6.37s/it]\
+Evaluate 13: Time 4.570s (it:4.634s) Data:0.499s (it:0.454s) Loss 1.3091e+03 Loss Seg 1.3493e+03 Loss Spot 1.3024e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:20<00:00,  4.57s/it]\
+Train 14: Time 6.353s (it:6.285s) Data:0.591s (it:0.494s) Loss 1.2520e+03 Loss Seg 1.4311e+03 Loss Spot 1.2448e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [06:02<00:00,  6.35s/it]\
+Evaluate 14: Time 4.378s (it:4.431s) Data:0.497s (it:0.452s) Loss 1.1919e+03 Loss Seg 1.3671e+03 Loss Spot 1.1850e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:09<00:00,  4.38s/it]\
+Train 15: Time 6.375s (it:6.175s) Data:0.545s (it:0.492s) Loss 1.2475e+03 Loss Seg 1.4986e+03 Loss Spot 1.2400e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [06:03<00:00,  6.37s/it]\
+Evaluate 15: Time 4.582s (it:4.632s) Data:0.496s (it:0.455s) Loss 1.2711e+03 Loss Seg 1.4049e+03 Loss Spot 1.2641e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:21<00:00,  4.58s/it]\
+Train 16: Time 6.322s (it:6.273s) Data:0.544s (it:0.502s) Loss 1.3597e+03 Loss Seg 1.4594e+03 Loss Spot 1.3524e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [06:00<00:00,  6.32s/it]\
+Evaluate 16: Time 4.620s (it:4.580s) Data:0.545s (it:0.454s) Loss 1.3166e+03 Loss Seg 1.3740e+03 Loss Spot 1.3097e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:23<00:00,  4.62s/it]\
+Train 17: Time 6.288s (it:6.227s) Data:0.544s (it:0.497s) Loss 1.1943e+03 Loss Seg 1.5364e+03 Loss Spot 1.1866e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.29s/it]\
+Evaluate 17: Time 4.638s (it:4.625s) Data:0.541s (it:0.455s) Loss 1.2538e+03 Loss Seg 1.3387e+03 Loss Spot 1.2471e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:24<00:00,  4.64s/it]\
+Train 18: Time 6.346s (it:6.103s) Data:0.544s (it:0.500s) Loss 1.2105e+03 Loss Seg 1.4797e+03 Loss Spot 1.2031e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [06:01<00:00,  6.35s/it]\
+Evaluate 18: Time 4.538s (it:4.634s) Data:0.497s (it:0.452s) Loss 1.1736e+03 Loss Seg 1.3456e+03 Loss Spot 1.1669e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:18<00:00,  4.54s/it]\
+Train 19: Time 6.397s (it:6.128s) Data:0.591s (it:0.499s) Loss 1.2646e+03 Loss Seg 1.3777e+03 Loss Spot 1.2577e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [06:04<00:00,  6.40s/it]\
+Evaluate 19: Time 4.456s (it:4.592s) Data:0.502s (it:0.456s) Loss 1.1992e+03 Loss Seg 1.3823e+03 Loss Spot 1.1923e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:14<00:00,  4.46s/it]\
+Train 20: Time 6.472s (it:6.083s) Data:0.594s (it:0.497s) Loss 1.1791e+03 Loss Seg 1.4909e+03 Loss Spot 1.1717e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [06:08<00:00,  6.47s/it]\
+Evaluate 20: Time 4.624s (it:4.739s) Data:0.496s (it:0.454s) Loss 1.1922e+03 Loss Seg 1.3751e+03 Loss Spot 1.1853e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:23<00:00,  4.62s/it]\
+Train 21: Time 6.224s (it:6.194s) Data:0.542s (it:0.502s) Loss 1.2003e+03 Loss Seg 1.4300e+03 Loss Spot 1.1932e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.22s/it]\
+Evaluate 21: Time 4.649s (it:4.675s) Data:0.539s (it:0.455s) Loss 1.2324e+03 Loss Seg 1.4106e+03 Loss Spot 1.2254e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:25<00:00,  4.65s/it]\
+Train 22: Time 6.200s (it:6.197s) Data:0.543s (it:0.497s) Loss 1.1808e+03 Loss Seg 1.3609e+03 Loss Spot 1.1740e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:53<00:00,  6.20s/it]\
+Evaluate 22: Time 4.691s (it:4.646s) Data:0.537s (it:0.459s) Loss 1.2249e+03 Loss Seg 1.3701e+03 Loss Spot 1.2181e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:27<00:00,  4.69s/it]\
+Train 23: Time 6.195s (it:6.037s) Data:0.540s (it:0.497s) Loss 1.1709e+03 Loss Seg 1.5484e+03 Loss Spot 1.1631e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:53<00:00,  6.19s/it]\
+Evaluate 23: Time 4.639s (it:4.595s) Data:0.498s (it:0.453s) Loss 1.1955e+03 Loss Seg 1.3772e+03 Loss Spot 1.1886e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:24<00:00,  4.64s/it]\
+Train 24: Time 6.255s (it:6.108s) Data:0.589s (it:0.500s) Loss 1.1449e+03 Loss Seg 1.4814e+03 Loss Spot 1.1375e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:56<00:00,  6.25s/it]\
+Evaluate 24: Time 4.648s (it:4.737s) Data:0.498s (it:0.456s) Loss 1.2915e+03 Loss Seg 1.3226e+03 Loss Spot 1.2849e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:24<00:00,  4.65s/it]\
+Train 25: Time 6.270s (it:6.024s) Data:0.590s (it:0.494s) Loss 1.1723e+03 Loss Seg 1.4499e+03 Loss Spot 1.1650e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:57<00:00,  6.27s/it]\
+Evaluate 25: Time 4.602s (it:4.597s) Data:0.497s (it:0.454s) Loss 1.1919e+03 Loss Seg 1.4174e+03 Loss Spot 1.1848e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:22<00:00,  4.60s/it]\
+Train 26: Time 6.212s (it:6.008s) Data:0.542s (it:0.492s) Loss 1.1683e+03 Loss Seg 1.4821e+03 Loss Spot 1.1609e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.21s/it]\
+Evaluate 26: Time 4.590s (it:4.556s) Data:0.539s (it:0.455s) Loss 1.3346e+03 Loss Seg 1.3704e+03 Loss Spot 1.3278e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:21<00:00,  4.59s/it]\
+Train 27: Time 6.222s (it:6.154s) Data:0.543s (it:0.503s) Loss 1.2581e+03 Loss Seg 1.3571e+03 Loss Spot 1.2513e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.22s/it]\
+Evaluate 27: Time 4.654s (it:4.664s) Data:0.536s (it:0.459s) Loss 1.1806e+03 Loss Seg 1.3987e+03 Loss Spot 1.1736e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:25<00:00,  4.65s/it]\
+Train 28: Time 6.205s (it:5.999s) Data:0.542s (it:0.502s) Loss 1.2262e+03 Loss Seg 1.4943e+03 Loss Spot 1.2187e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:53<00:00,  6.21s/it]\
+Evaluate 28: Time 4.660s (it:4.685s) Data:0.500s (it:0.455s) Loss 1.3235e+03 Loss Seg 1.5722e+03 Loss Spot 1.3156e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:25<00:00,  4.66s/it]\
+Train 29: Time 6.243s (it:6.135s) Data:0.576s (it:0.501s) Loss 1.2175e+03 Loss Seg 1.5465e+03 Loss Spot 1.2098e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.24s/it]\
+Evaluate 29: Time 4.635s (it:4.545s) Data:0.498s (it:0.448s) Loss 1.2300e+03 Loss Seg 1.3869e+03 Loss Spot 1.2230e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:24<00:00,  4.63s/it]\
+Train 30: Time 6.263s (it:6.088s) Data:0.591s (it:0.494s) Loss 1.2139e+03 Loss Seg 1.4559e+03 Loss Spot 1.2066e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:56<00:00,  6.26s/it]\
+Evaluate 30: Time 4.623s (it:4.626s) Data:0.497s (it:0.453s) Loss 1.2879e+03 Loss Seg 1.4354e+03 Loss Spot 1.2808e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:23<00:00,  4.62s/it]\
+Train 31: Time 6.237s (it:6.308s) Data:0.543s (it:0.504s) Loss 1.2180e+03 Loss Seg 1.4523e+03 Loss Spot 1.2107e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.24s/it]\
+Evaluate 31: Time 4.469s (it:4.434s) Data:0.540s (it:0.458s) Loss 1.1370e+03 Loss Seg 1.4514e+03 Loss Spot 1.1297e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:14<00:00,  4.47s/it]\
+Train 32: Time 6.213s (it:6.311s) Data:0.543s (it:0.494s) Loss 1.1534e+03 Loss Seg 1.4939e+03 Loss Spot 1.1459e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.21s/it]\
+Evaluate 32: Time 4.507s (it:4.398s) Data:0.538s (it:0.455s) Loss 1.2253e+03 Loss Seg 1.3209e+03 Loss Spot 1.2187e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:16<00:00,  4.51s/it]\
+Train 33: Time 6.223s (it:5.996s) Data:0.542s (it:0.496s) Loss 1.1655e+03 Loss Seg 1.4292e+03 Loss Spot 1.1584e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.22s/it]\
+Evaluate 33: Time 4.465s (it:4.435s) Data:0.498s (it:0.453s) Loss 1.2333e+03 Loss Seg 1.4122e+03 Loss Spot 1.2263e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:14<00:00,  4.47s/it]\
+Train 34: Time 6.269s (it:6.024s) Data:0.589s (it:0.492s) Loss 1.1274e+03 Loss Seg 1.4017e+03 Loss Spot 1.1204e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:57<00:00,  6.27s/it]\
+Evaluate 34: Time 4.444s (it:4.511s) Data:0.498s (it:0.455s) Loss 1.1761e+03 Loss Seg 1.3857e+03 Loss Spot 1.1692e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:13<00:00,  4.44s/it]\
+Train 35: Time 6.286s (it:6.021s) Data:0.592s (it:0.503s) Loss 1.1659e+03 Loss Seg 1.5315e+03 Loss Spot 1.1583e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.29s/it]\
+Evaluate 35: Time 4.421s (it:4.451s) Data:0.497s (it:0.456s) Loss 1.1686e+03 Loss Seg 1.3173e+03 Loss Spot 1.1620e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:11<00:00,  4.42s/it]\
+Train 36: Time 6.207s (it:6.246s) Data:0.543s (it:0.492s) Loss 1.1353e+03 Loss Seg 1.5323e+03 Loss Spot 1.1277e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:53<00:00,  6.21s/it]\
+Evaluate 36: Time 4.646s (it:4.622s) Data:0.539s (it:0.459s) Loss 1.1878e+03 Loss Seg 1.3842e+03 Loss Spot 1.1809e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:24<00:00,  4.65s/it]\
+Train 37: Time 6.219s (it:6.302s) Data:0.543s (it:0.498s) Loss 1.1425e+03 Loss Seg 1.3629e+03 Loss Spot 1.1357e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.22s/it]\
+Evaluate 37: Time 4.693s (it:4.565s) Data:0.538s (it:0.455s) Loss 1.2532e+03 Loss Seg 1.3928e+03 Loss Spot 1.2462e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:27<00:00,  4.69s/it]\
+Train 38: Time 6.230s (it:6.321s) Data:0.543s (it:0.503s) Loss 1.1523e+03 Loss Seg 1.4344e+03 Loss Spot 1.1451e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.23s/it]\
+Evaluate 38: Time 4.618s (it:4.664s) Data:0.500s (it:0.456s) Loss 1.1159e+03 Loss Seg 1.4052e+03 Loss Spot 1.1089e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:23<00:00,  4.62s/it]\
+Train 39: Time 6.292s (it:6.295s) Data:0.589s (it:0.497s) Loss 1.1906e+03 Loss Seg 1.3847e+03 Loss Spot 1.1836e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.29s/it]\
+Evaluate 39: Time 4.590s (it:4.653s) Data:0.498s (it:0.454s) Loss 1.2055e+03 Loss Seg 1.4030e+03 Loss Spot 1.1985e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:21<00:00,  4.59s/it]\
+Train 40: Time 6.305s (it:6.121s) Data:0.592s (it:0.511s) Loss 1.1108e+03 Loss Seg 1.4878e+03 Loss Spot 1.1033e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:59<00:00,  6.30s/it]\
+Evaluate 40: Time 4.609s (it:4.707s) Data:0.496s (it:0.458s) Loss 1.1309e+03 Loss Seg 1.3923e+03 Loss Spot 1.1240e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:22<00:00,  4.61s/it]\
+Train 41: Time 6.231s (it:6.097s) Data:0.542s (it:0.494s) Loss 1.0976e+03 Loss Seg 1.3644e+03 Loss Spot 1.0908e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.23s/it]\
+Evaluate 41: Time 4.649s (it:4.645s) Data:0.537s (it:0.457s) Loss 1.1445e+03 Loss Seg 1.3995e+03 Loss Spot 1.1375e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:24<00:00,  4.65s/it]\
+Train 42: Time 6.218s (it:6.173s) Data:0.543s (it:0.503s) Loss 1.1666e+03 Loss Seg 1.4570e+03 Loss Spot 1.1593e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.22s/it]\
+Evaluate 42: Time 4.684s (it:4.730s) Data:0.537s (it:0.477s) Loss 1.1962e+03 Loss Seg 1.3786e+03 Loss Spot 1.1893e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:26<00:00,  4.68s/it]\
+Train 43: Time 6.248s (it:6.163s) Data:0.544s (it:0.499s) Loss 1.1358e+03 Loss Seg 1.5353e+03 Loss Spot 1.1281e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:56<00:00,  6.25s/it]\
+Evaluate 43: Time 4.639s (it:4.716s) Data:0.498s (it:0.453s) Loss 1.2175e+03 Loss Seg 1.2992e+03 Loss Spot 1.2110e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:24<00:00,  4.64s/it]\
+Train 44: Time 6.276s (it:6.065s) Data:0.590s (it:0.494s) Loss 1.1229e+03 Loss Seg 1.5195e+03 Loss Spot 1.1153e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:57<00:00,  6.28s/it]\
+Evaluate 44: Time 4.599s (it:4.569s) Data:0.497s (it:0.456s) Loss 1.1130e+03 Loss Seg 1.3416e+03 Loss Spot 1.1063e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:22<00:00,  4.60s/it]\
+Train 45: Time 6.302s (it:6.107s) Data:0.590s (it:0.493s) Loss 1.0743e+03 Loss Seg 1.4136e+03 Loss Spot 1.0672e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:59<00:00,  6.30s/it]\
+Evaluate 45: Time 4.636s (it:4.660s) Data:0.496s (it:0.452s) Loss 1.1485e+03 Loss Seg 1.3559e+03 Loss Spot 1.1417e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:24<00:00,  4.64s/it]\
+Train 46: Time 6.217s (it:5.956s) Data:0.543s (it:0.500s) Loss 1.0751e+03 Loss Seg 1.4735e+03 Loss Spot 1.0677e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.22s/it]\
+Evaluate 46: Time 4.662s (it:4.603s) Data:0.537s (it:0.460s) Loss 1.1664e+03 Loss Seg 1.3505e+03 Loss Spot 1.1596e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:25<00:00,  4.66s/it]\
+Train 47: Time 6.201s (it:5.996s) Data:0.543s (it:0.498s) Loss 1.1241e+03 Loss Seg 1.4337e+03 Loss Spot 1.1169e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:53<00:00,  6.20s/it]\
+Evaluate 47: Time 4.679s (it:4.610s) Data:0.536s (it:0.459s) Loss 1.2609e+03 Loss Seg 1.4004e+03 Loss Spot 1.2539e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:26<00:00,  4.68s/it]\
+Train 48: Time 6.219s (it:6.138s) Data:0.543s (it:0.499s) Loss 1.1783e+03 Loss Seg 1.3788e+03 Loss Spot 1.1714e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.22s/it]\
+Evaluate 48: Time 4.654s (it:4.726s) Data:0.499s (it:0.451s) Loss 1.1928e+03 Loss Seg 1.4202e+03 Loss Spot 1.1857e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:25<00:00,  4.65s/it]\
+Train 49: Time 6.245s (it:6.175s) Data:0.576s (it:0.496s) Loss 1.1701e+03 Loss Seg 1.4298e+03 Loss Spot 1.1630e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.25s/it]\
+Evaluate 49: Time 4.611s (it:4.601s) Data:0.498s (it:0.456s) Loss 1.2189e+03 Loss Seg 1.3471e+03 Loss Spot 1.2121e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:22<00:00,  4.61s/it]\
+Train 50: Time 6.271s (it:6.128s) Data:0.590s (it:0.498s) Loss 1.0627e+03 Loss Seg 1.4722e+03 Loss Spot 1.0553e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:57<00:00,  6.27s/it]\
+Evaluate 50: Time 4.562s (it:4.588s) Data:0.497s (it:0.458s) Loss 1.1897e+03 Loss Seg 1.3612e+03 Loss Spot 1.1829e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:20<00:00,  4.56s/it]\
+Train 51: Time 6.200s (it:6.145s) Data:0.543s (it:0.492s) Loss 1.1773e+03 Loss Seg 1.3902e+03 Loss Spot 1.1704e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:53<00:00,  6.20s/it]\
+Evaluate 51: Time 4.651s (it:4.670s) Data:0.540s (it:0.456s) Loss 1.2407e+03 Loss Seg 1.3681e+03 Loss Spot 1.2338e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:25<00:00,  4.65s/it]\
+Train 52: Time 6.216s (it:6.335s) Data:0.541s (it:0.503s) Loss 1.1214e+03 Loss Seg 1.4454e+03 Loss Spot 1.1142e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.22s/it]\
+Evaluate 52: Time 4.663s (it:4.702s) Data:0.536s (it:0.459s) Loss 1.1636e+03 Loss Seg 1.3523e+03 Loss Spot 1.1568e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:25<00:00,  4.66s/it]\
+Train 53: Time 6.209s (it:6.165s) Data:0.543s (it:0.498s) Loss 1.1578e+03 Loss Seg 1.5151e+03 Loss Spot 1.1503e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:53<00:00,  6.21s/it]\
+Evaluate 53: Time 4.651s (it:4.631s) Data:0.498s (it:0.454s) Loss 1.2659e+03 Loss Seg 1.3399e+03 Loss Spot 1.2592e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:25<00:00,  4.65s/it]\
+Train 54: Time 6.264s (it:6.141s) Data:0.590s (it:0.499s) Loss 1.1147e+03 Loss Seg 1.5056e+03 Loss Spot 1.1072e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:57<00:00,  6.26s/it]\
+Evaluate 54: Time 4.616s (it:4.827s) Data:0.498s (it:0.453s) Loss 1.1729e+03 Loss Seg 1.3032e+03 Loss Spot 1.1663e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:23<00:00,  4.62s/it]\
+Train 55: Time 6.252s (it:6.136s) Data:0.589s (it:0.492s) Loss 1.1473e+03 Loss Seg 1.4350e+03 Loss Spot 1.1402e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:56<00:00,  6.25s/it]\
+Evaluate 55: Time 4.525s (it:4.551s) Data:0.497s (it:0.454s) Loss 1.1715e+03 Loss Seg 1.3443e+03 Loss Spot 1.1647e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:17<00:00,  4.53s/it]\
+Train 56: Time 6.207s (it:6.044s) Data:0.544s (it:0.496s) Loss 1.1176e+03 Loss Seg 1.4483e+03 Loss Spot 1.1103e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:53<00:00,  6.21s/it]\
+Evaluate 56: Time 4.471s (it:4.535s) Data:0.539s (it:0.459s) Loss 1.1544e+03 Loss Seg 1.3900e+03 Loss Spot 1.1474e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:14<00:00,  4.47s/it]\
+Train 57: Time 6.215s (it:6.024s) Data:0.544s (it:0.501s) Loss 1.1495e+03 Loss Seg 1.4779e+03 Loss Spot 1.1421e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.22s/it]\
+Evaluate 57: Time 4.679s (it:4.703s) Data:0.535s (it:0.460s) Loss 1.1428e+03 Loss Seg 1.4505e+03 Loss Spot 1.1356e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:26<00:00,  4.68s/it]\
+Train 58: Time 6.196s (it:6.190s) Data:0.542s (it:0.496s) Loss 1.1328e+03 Loss Seg 1.3997e+03 Loss Spot 1.1258e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:53<00:00,  6.20s/it]\
+Evaluate 58: Time 4.572s (it:4.487s) Data:0.535s (it:0.466s) Loss 1.1718e+03 Loss Seg 1.3761e+03 Loss Spot 1.1649e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:20<00:00,  4.57s/it]\
+Train 59: Time 6.201s (it:6.153s) Data:0.543s (it:0.496s) Loss 1.1014e+03 Loss Seg 1.4672e+03 Loss Spot 1.0940e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:53<00:00,  6.20s/it]\
+Evaluate 59: Time 4.651s (it:4.667s) Data:0.498s (it:0.454s) Loss 1.1541e+03 Loss Seg 1.3234e+03 Loss Spot 1.1475e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:25<00:00,  4.65s/it]\
+Train 60: Time 6.262s (it:6.186s) Data:0.541s (it:0.494s) Loss 1.0783e+03 Loss Seg 1.4990e+03 Loss Spot 1.0708e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:56<00:00,  6.26s/it]\
+Evaluate 60: Time 4.438s (it:4.453s) Data:0.496s (it:0.453s) Loss 1.0846e+03 Loss Seg 1.3341e+03 Loss Spot 1.0779e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:12<00:00,  4.44s/it]\
+Train 61: Time 6.265s (it:6.057s) Data:0.589s (it:0.491s) Loss 1.0836e+03 Loss Seg 1.3857e+03 Loss Spot 1.0767e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:57<00:00,  6.26s/it]\
+Evaluate 61: Time 4.443s (it:4.428s) Data:0.496s (it:0.457s) Loss 1.1786e+03 Loss Seg 1.3788e+03 Loss Spot 1.1717e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:13<00:00,  4.44s/it]\
+Train 62: Time 6.187s (it:6.040s) Data:0.541s (it:0.493s) Loss 1.0989e+03 Loss Seg 1.5189e+03 Loss Spot 1.0913e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:52<00:00,  6.19s/it]\
+Evaluate 62: Time 4.467s (it:4.542s) Data:0.535s (it:0.458s) Loss 1.1562e+03 Loss Seg 1.3402e+03 Loss Spot 1.1494e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:14<00:00,  4.47s/it]\
+Train 63: Time 6.212s (it:6.137s) Data:0.543s (it:0.497s) Loss 1.1685e+03 Loss Seg 1.4342e+03 Loss Spot 1.1614e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.21s/it]\
+Evaluate 63: Time 4.516s (it:6.823s) Data:0.533s (it:2.415s) Loss 1.2192e+03 Loss Seg 1.4722e+03 Loss Spot 1.2119e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:17<00:00,  4.52s/it]\
+Train 64: Time 6.208s (it:6.233s) Data:0.543s (it:0.500s) Loss 1.1947e+03 Loss Seg 1.4753e+03 Loss Spot 1.1873e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:53<00:00,  6.21s/it]\
+Evaluate 64: Time 4.504s (it:4.563s) Data:0.498s (it:0.454s) Loss 1.1287e+03 Loss Seg 1.4102e+03 Loss Spot 1.1216e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:16<00:00,  4.50s/it]\
+Train 65: Time 6.260s (it:6.061s) Data:0.592s (it:0.495s) Loss 1.1100e+03 Loss Seg 1.5345e+03 Loss Spot 1.1024e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:56<00:00,  6.26s/it]\
+Evaluate 65: Time 4.674s (it:4.615s) Data:0.497s (it:0.458s) Loss 1.1318e+03 Loss Seg 1.3925e+03 Loss Spot 1.1249e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:26<00:00,  4.67s/it]\
+Train 66: Time 6.268s (it:9.225s) Data:0.589s (it:3.168s) Loss 1.1464e+03 Loss Seg 1.3874e+03 Loss Spot 1.1395e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:57<00:00,  6.27s/it]\
+Evaluate 66: Time 4.308s (it:4.450s) Data:0.495s (it:0.455s) Loss 1.2189e+03 Loss Seg 1.3755e+03 Loss Spot 1.2120e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:05<00:00,  4.31s/it]\
+Train 67: Time 6.219s (it:6.152s) Data:0.542s (it:0.494s) Loss 1.1310e+03 Loss Seg 1.3763e+03 Loss Spot 1.1241e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.22s/it]\
+Evaluate 67: Time 4.482s (it:4.506s) Data:0.538s (it:0.456s) Loss 1.1491e+03 Loss Seg 1.3754e+03 Loss Spot 1.1422e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:15<00:00,  4.48s/it]\
+Train 68: Time 6.227s (it:6.031s) Data:0.543s (it:0.507s) Loss 1.1325e+03 Loss Seg 1.4537e+03 Loss Spot 1.1252e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.23s/it]\
+Evaluate 68: Time 4.549s (it:4.540s) Data:0.536s (it:0.465s) Loss 1.1337e+03 Loss Seg 1.4808e+03 Loss Spot 1.1263e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:19<00:00,  4.55s/it]\
+Train 69: Time 6.220s (it:6.061s) Data:0.544s (it:0.500s) Loss 1.1083e+03 Loss Seg 1.4811e+03 Loss Spot 1.1009e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.22s/it]\
+Evaluate 69: Time 4.686s (it:4.681s) Data:0.500s (it:0.454s) Loss 1.1398e+03 Loss Seg 1.3624e+03 Loss Spot 1.1330e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:27<00:00,  4.69s/it]\
+Train 70: Time 6.274s (it:6.166s) Data:0.591s (it:0.499s) Loss 1.0613e+03 Loss Seg 1.3666e+03 Loss Spot 1.0545e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:57<00:00,  6.27s/it]\
+Evaluate 70: Time 4.612s (it:4.678s) Data:0.497s (it:0.455s) Loss 1.1055e+03 Loss Seg 1.3776e+03 Loss Spot 1.0986e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:22<00:00,  4.61s/it]\
+Train 71: Time 6.289s (it:6.275s) Data:0.591s (it:0.499s) Loss 1.0622e+03 Loss Seg 1.4553e+03 Loss Spot 1.0549e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.29s/it]\
+Evaluate 71: Time 4.478s (it:4.456s) Data:0.498s (it:0.455s) Loss 1.1499e+03 Loss Seg 1.3511e+03 Loss Spot 1.1432e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:15<00:00,  4.48s/it]\
+Train 72: Time 6.262s (it:9.235s) Data:0.589s (it:3.179s) Loss 1.0487e+03 Loss Seg 1.4880e+03 Loss Spot 1.0412e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:56<00:00,  6.26s/it]\
+Evaluate 72: Time 4.401s (it:4.445s) Data:0.496s (it:0.457s) Loss 1.0888e+03 Loss Seg 1.3639e+03 Loss Spot 1.0820e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:10<00:00,  4.40s/it]\
+Train 73: Time 6.209s (it:6.137s) Data:0.544s (it:0.498s) Loss 1.0607e+03 Loss Seg 1.4375e+03 Loss Spot 1.0535e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:53<00:00,  6.21s/it]\
+Evaluate 73: Time 4.483s (it:4.504s) Data:0.537s (it:0.457s) Loss 1.1591e+03 Loss Seg 1.3928e+03 Loss Spot 1.1521e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:15<00:00,  4.48s/it]\
+Train 74: Time 6.345s (it:6.188s) Data:0.548s (it:0.504s) Loss 1.0840e+03 Loss Seg 1.4383e+03 Loss Spot 1.0768e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [06:01<00:00,  6.35s/it]\
+Evaluate 74: Time 4.452s (it:6.925s) Data:0.538s (it:2.528s) Loss 1.1533e+03 Loss Seg 1.3148e+03 Loss Spot 1.1467e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:13<00:00,  4.45s/it]\
+Train 75: Time 6.246s (it:6.136s) Data:0.544s (it:0.496s) Loss 1.0544e+03 Loss Seg 1.4198e+03 Loss Spot 1.0473e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:56<00:00,  6.25s/it]\
+Evaluate 75: Time 4.463s (it:4.505s) Data:0.498s (it:0.454s) Loss 1.0540e+03 Loss Seg 1.4178e+03 Loss Spot 1.0470e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:14<00:00,  4.46s/it]\
+Train 76: Time 6.279s (it:6.209s) Data:0.591s (it:0.503s) Loss 1.0521e+03 Loss Seg 1.4174e+03 Loss Spot 1.0450e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:57<00:00,  6.28s/it]\
+Evaluate 76: Time 4.442s (it:4.535s) Data:0.497s (it:0.455s) Loss 1.0501e+03 Loss Seg 1.3132e+03 Loss Spot 1.0435e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:13<00:00,  4.44s/it]\
+Train 77: Time 6.237s (it:6.071s) Data:0.544s (it:0.497s) Loss 1.0258e+03 Loss Seg 1.4343e+03 Loss Spot 1.0186e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.24s/it]\
+Evaluate 77: Time 4.615s (it:4.591s) Data:0.540s (it:0.457s) Loss 1.0980e+03 Loss Seg 1.3770e+03 Loss Spot 1.0911e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:23<00:00,  4.62s/it]\
+Train 78: Time 6.215s (it:6.223s) Data:0.544s (it:0.495s) Loss 1.0650e+03 Loss Seg 1.4624e+03 Loss Spot 1.0577e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.21s/it]\
+Evaluate 78: Time 4.528s (it:4.481s) Data:0.535s (it:0.462s) Loss 1.1815e+03 Loss Seg 1.3815e+03 Loss Spot 1.1746e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:18<00:00,  4.53s/it]\
+Train 79: Time 6.242s (it:6.203s) Data:0.544s (it:0.515s) Loss 1.1388e+03 Loss Seg 1.4047e+03 Loss Spot 1.1318e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.24s/it]\
+Evaluate 79: Time 4.396s (it:4.443s) Data:0.499s (it:0.453s) Loss 1.0907e+03 Loss Seg 1.2833e+03 Loss Spot 1.0843e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:10<00:00,  4.40s/it]\
+Train 80: Time 6.265s (it:6.072s) Data:0.589s (it:0.498s) Loss 1.0851e+03 Loss Seg 1.3989e+03 Loss Spot 1.0781e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:57<00:00,  6.26s/it]\
+Evaluate 80: Time 4.546s (it:4.512s) Data:0.499s (it:0.458s) Loss 1.0966e+03 Loss Seg 1.4344e+03 Loss Spot 1.0894e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:19<00:00,  4.55s/it]\
+Train 81: Time 6.271s (it:6.188s) Data:0.593s (it:0.501s) Loss 1.1001e+03 Loss Seg 1.4212e+03 Loss Spot 1.0930e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:57<00:00,  6.27s/it]\
+Evaluate 81: Time 4.446s (it:4.500s) Data:0.497s (it:0.456s) Loss 1.1225e+03 Loss Seg 1.2767e+03 Loss Spot 1.1161e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:13<00:00,  4.45s/it]\
+Train 82: Time 6.212s (it:6.155s) Data:0.543s (it:0.495s) Loss 1.0728e+03 Loss Seg 1.3424e+03 Loss Spot 1.0661e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.21s/it]\
+Evaluate 82: Time 4.638s (it:4.613s) Data:0.541s (it:0.457s) Loss 1.1179e+03 Loss Seg 1.4111e+03 Loss Spot 1.1109e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:24<00:00,  4.64s/it]\
+Train 83: Time 6.224s (it:6.124s) Data:0.543s (it:0.494s) Loss 1.0721e+03 Loss Seg 1.2654e+03 Loss Spot 1.0658e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.22s/it]\
+Evaluate 83: Time 4.421s (it:4.380s) Data:0.537s (it:0.456s) Loss 1.0991e+03 Loss Seg 1.3331e+03 Loss Spot 1.0924e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:12<00:00,  4.42s/it]\
+Train 84: Time 6.228s (it:6.251s) Data:0.544s (it:0.502s) Loss 1.0987e+03 Loss Seg 1.3928e+03 Loss Spot 1.0917e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.23s/it]\
+Evaluate 84: Time 4.418s (it:4.512s) Data:0.499s (it:0.450s) Loss 1.2782e+03 Loss Seg 1.3314e+03 Loss Spot 1.2715e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:11<00:00,  4.42s/it]\
+Train 85: Time 6.295s (it:6.080s) Data:0.591s (it:0.495s) Loss 1.1487e+03 Loss Seg 1.4571e+03 Loss Spot 1.1414e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.29s/it]\
+Evaluate 85: Time 4.523s (it:4.590s) Data:0.497s (it:0.452s) Loss 1.1025e+03 Loss Seg 1.3900e+03 Loss Spot 1.0956e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:17<00:00,  4.52s/it]\
+Train 86: Time 6.286s (it:6.079s) Data:0.591s (it:0.502s) Loss 1.0128e+03 Loss Seg 1.4973e+03 Loss Spot 1.0053e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.29s/it]\
+Evaluate 86: Time 4.603s (it:4.764s) Data:0.496s (it:0.457s) Loss 1.0637e+03 Loss Seg 1.3372e+03 Loss Spot 1.0570e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:22<00:00,  4.60s/it]\
+Train 87: Time 6.228s (it:6.120s) Data:0.544s (it:0.491s) Loss 1.1046e+03 Loss Seg 1.3645e+03 Loss Spot 1.0978e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.23s/it]\
+Evaluate 87: Time 4.488s (it:4.570s) Data:0.538s (it:0.456s) Loss 1.1289e+03 Loss Seg 1.3162e+03 Loss Spot 1.1224e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:15<00:00,  4.49s/it]\
+Train 88: Time 6.225s (it:6.173s) Data:0.545s (it:0.495s) Loss 1.0857e+03 Loss Seg 1.3856e+03 Loss Spot 1.0788e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.23s/it]\
+Evaluate 88: Time 4.457s (it:4.465s) Data:0.535s (it:0.469s) Loss 1.1202e+03 Loss Seg 1.3525e+03 Loss Spot 1.1134e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:14<00:00,  4.46s/it]\
+Train 89: Time 6.247s (it:6.236s) Data:0.545s (it:0.502s) Loss 1.0939e+03 Loss Seg 1.3352e+03 Loss Spot 1.0873e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:56<00:00,  6.25s/it]\
+Evaluate 89: Time 4.319s (it:4.361s) Data:0.498s (it:0.455s) Loss 1.1380e+03 Loss Seg 1.3772e+03 Loss Spot 1.1311e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:06<00:00,  4.32s/it]\
+Train 90: Time 6.292s (it:6.122s) Data:0.592s (it:0.501s) Loss 1.0675e+03 Loss Seg 1.4065e+03 Loss Spot 1.0605e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.29s/it]\
+Evaluate 90: Time 4.603s (it:4.607s) Data:0.498s (it:0.454s) Loss 1.1087e+03 Loss Seg 1.1857e+03 Loss Spot 1.1028e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:22<00:00,  4.60s/it]\
+Train 91: Time 6.296s (it:6.160s) Data:0.591s (it:0.502s) Loss 1.0775e+03 Loss Seg 1.3149e+03 Loss Spot 1.0710e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.30s/it]\
+Evaluate 91: Time 4.383s (it:4.445s) Data:0.496s (it:0.453s) Loss 1.1266e+03 Loss Seg 1.3525e+03 Loss Spot 1.1198e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:09<00:00,  4.38s/it]\
+Train 92: Time 6.234s (it:6.116s) Data:0.542s (it:0.498s) Loss 1.0806e+03 Loss Seg 1.3483e+03 Loss Spot 1.0738e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.23s/it]\
+Evaluate 92: Time 4.337s (it:4.337s) Data:0.540s (it:0.458s) Loss 1.1111e+03 Loss Seg 1.3359e+03 Loss Spot 1.1045e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:07<00:00,  4.34s/it]\
+Train 93: Time 6.206s (it:6.176s) Data:0.543s (it:0.495s) Loss 1.0633e+03 Loss Seg 1.3965e+03 Loss Spot 1.0563e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:53<00:00,  6.21s/it]\
+Evaluate 93: Time 4.365s (it:4.396s) Data:0.536s (it:0.459s) Loss 1.1068e+03 Loss Seg 1.3248e+03 Loss Spot 1.1002e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:08<00:00,  4.37s/it]\
+Train 94: Time 6.256s (it:6.176s) Data:0.545s (it:0.503s) Loss 1.0600e+03 Loss Seg 1.3418e+03 Loss Spot 1.0533e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:56<00:00,  6.26s/it]\
+Evaluate 94: Time 4.660s (it:4.678s) Data:0.500s (it:0.456s) Loss 1.0991e+03 Loss Seg 1.3316e+03 Loss Spot 1.0924e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:25<00:00,  4.66s/it]\
+Train 95: Time 6.289s (it:6.181s) Data:0.592s (it:0.504s) Loss 1.0264e+03 Loss Seg 1.3941e+03 Loss Spot 1.0195e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.29s/it]\
+Evaluate 95: Time 4.404s (it:4.451s) Data:0.497s (it:0.454s) Loss 1.0994e+03 Loss Seg 1.3475e+03 Loss Spot 1.0927e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:10<00:00,  4.40s/it]\
+Train 96: Time 6.286s (it:6.177s) Data:0.593s (it:0.504s) Loss 1.0456e+03 Loss Seg 1.3235e+03 Loss Spot 1.0390e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.29s/it]\
+Evaluate 96: Time 4.450s (it:4.468s) Data:0.496s (it:0.453s) Loss 1.0926e+03 Loss Seg 1.3180e+03 Loss Spot 1.0860e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:13<00:00,  4.45s/it]\
+Train 97: Time 6.273s (it:6.145s) Data:0.591s (it:0.497s) Loss 1.0650e+03 Loss Seg 1.3351e+03 Loss Spot 1.0583e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:57<00:00,  6.27s/it]\
+Evaluate 97: Time 4.445s (it:4.496s) Data:0.496s (it:0.454s) Loss 1.0819e+03 Loss Seg 1.2957e+03 Loss Spot 1.0754e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:13<00:00,  4.45s/it]\
+Train 98: Time 6.223s (it:6.224s) Data:0.542s (it:0.497s) Loss 1.0413e+03 Loss Seg 1.3403e+03 Loss Spot 1.0346e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.22s/it]\
+Evaluate 98: Time 4.447s (it:4.427s) Data:0.540s (it:0.457s) Loss 1.0564e+03 Loss Seg 1.3205e+03 Loss Spot 1.0498e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:13<00:00,  4.45s/it]\
+Train 99: Time 6.230s (it:6.342s) Data:0.544s (it:0.500s) Loss 1.0437e+03 Loss Seg 1.3243e+03 Loss Spot 1.0371e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.23s/it]\
+Evaluate 99: Time 4.427s (it:4.529s) Data:0.535s (it:0.464s) Loss 1.0684e+03 Loss Seg 1.2547e+03 Loss Spot 1.0622e+03 : 100%|\uc0\u9608 \u9608 \u9608 | 57/57 [04:12<00:00,  4.43s/it]\
+Train 100: Time 6.228s (it:6.080s) Data:0.543s (it:0.497s) Loss 1.0475e+03 Loss Seg 1.2634e+03 Loss Spot 1.0412e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.23s/it]\
+Evaluate 100: Time 4.360s (it:4.462s) Data:0.498s (it:0.454s) Loss 1.1447e+03 Loss Seg 1.2644e+03 Loss Spot 1.1384e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:08<00:00,  4.36s/it]\
+Train 101: Time 6.298s (it:6.061s) Data:0.592s (it:0.491s) Loss 1.0202e+03 Loss Seg 1.4096e+03 Loss Spot 1.0132e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.30s/it]\
+Evaluate 101: Time 4.546s (it:4.568s) Data:0.496s (it:0.455s) Loss 1.0802e+03 Loss Seg 1.3669e+03 Loss Spot 1.0734e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:19<00:00,  4.55s/it]\
+Train 102: Time 6.231s (it:6.263s) Data:0.543s (it:0.496s) Loss 1.0614e+03 Loss Seg 1.3394e+03 Loss Spot 1.0547e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.23s/it]\
+Evaluate 102: Time 4.449s (it:4.582s) Data:0.540s (it:0.455s) Loss 1.0455e+03 Loss Seg 1.3191e+03 Loss Spot 1.0389e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:13<00:00,  4.45s/it]\
+Train 103: Time 6.238s (it:6.299s) Data:0.544s (it:0.504s) Loss 1.0623e+03 Loss Seg 1.3556e+03 Loss Spot 1.0555e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.24s/it]\
+Evaluate 103: Time 4.491s (it:4.559s) Data:0.537s (it:0.456s) Loss 1.0735e+03 Loss Seg 1.2130e+03 Loss Spot 1.0675e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:15<00:00,  4.49s/it]\
+Train 104: Time 6.231s (it:6.141s) Data:0.543s (it:0.499s) Loss 1.0890e+03 Loss Seg 1.3520e+03 Loss Spot 1.0822e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.23s/it]\
+Evaluate 104: Time 4.615s (it:4.776s) Data:0.500s (it:0.456s) Loss 1.0584e+03 Loss Seg 1.3323e+03 Loss Spot 1.0517e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:23<00:00,  4.62s/it]\
+Train 105: Time 6.282s (it:6.104s) Data:0.592s (it:0.499s) Loss 1.0666e+03 Loss Seg 1.2919e+03 Loss Spot 1.0602e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.28s/it]\
+Evaluate 105: Time 4.289s (it:4.365s) Data:0.497s (it:0.453s) Loss 1.0699e+03 Loss Seg 1.2935e+03 Loss Spot 1.0635e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:04<00:00,  4.29s/it]\
+Train 106: Time 6.282s (it:6.064s) Data:0.592s (it:0.503s) Loss 1.0659e+03 Loss Seg 1.3236e+03 Loss Spot 1.0593e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.28s/it]\
+Evaluate 106: Time 4.389s (it:4.437s) Data:0.497s (it:0.453s) Loss 1.0623e+03 Loss Seg 1.2228e+03 Loss Spot 1.0562e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:10<00:00,  4.39s/it]\
+Train 107: Time 6.244s (it:6.177s) Data:0.544s (it:0.504s) Loss 1.0001e+03 Loss Seg 1.3161e+03 Loss Spot 9.9354e+02 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.24s/it]\
+Evaluate 107: Time 4.429s (it:4.534s) Data:0.539s (it:0.456s) Loss 1.1333e+03 Loss Seg 1.3003e+03 Loss Spot 1.1268e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:12<00:00,  4.43s/it]\
+Train 108: Time 6.240s (it:6.075s) Data:0.543s (it:0.498s) Loss 1.0107e+03 Loss Seg 1.3042e+03 Loss Spot 1.0042e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.24s/it]\
+Evaluate 108: Time 4.522s (it:4.509s) Data:0.538s (it:0.458s) Loss 1.0524e+03 Loss Seg 1.1936e+03 Loss Spot 1.0464e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:17<00:00,  4.52s/it]\
+Train 109: Time 6.217s (it:6.278s) Data:0.543s (it:0.503s) Loss 1.0156e+03 Loss Seg 1.3369e+03 Loss Spot 1.0089e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.22s/it]\
+Evaluate 109: Time 4.637s (it:4.651s) Data:0.535s (it:0.460s) Loss 1.1460e+03 Loss Seg 1.2167e+03 Loss Spot 1.1399e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:24<00:00,  4.64s/it]\
+Train 110: Time 6.220s (it:6.209s) Data:0.543s (it:0.499s) Loss 1.0098e+03 Loss Seg 1.3213e+03 Loss Spot 1.0032e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.22s/it]\
+Evaluate 110: Time 4.424s (it:4.494s) Data:0.498s (it:0.453s) Loss 1.1475e+03 Loss Seg 1.2316e+03 Loss Spot 1.1414e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:12<00:00,  4.42s/it]\
+Train 111: Time 6.284s (it:6.043s) Data:0.591s (it:0.501s) Loss 1.0850e+03 Loss Seg 1.2482e+03 Loss Spot 1.0787e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.28s/it]\
+Evaluate 111: Time 4.428s (it:4.470s) Data:0.498s (it:0.454s) Loss 1.0577e+03 Loss Seg 1.1383e+03 Loss Spot 1.0520e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:12<00:00,  4.43s/it]\
+Train 112: Time 6.294s (it:6.114s) Data:0.591s (it:0.502s) Loss 9.8946e+02 Loss Seg 1.3264e+03 Loss Spot 9.8283e+02 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.29s/it]\
+Evaluate 112: Time 4.520s (it:4.718s) Data:0.496s (it:0.458s) Loss 1.0897e+03 Loss Seg 1.1393e+03 Loss Spot 1.0840e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:17<00:00,  4.52s/it]\
+Train 113: Time 6.231s (it:6.185s) Data:0.544s (it:0.495s) Loss 1.0702e+03 Loss Seg 1.2244e+03 Loss Spot 1.0641e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.23s/it]\
+Evaluate 113: Time 4.590s (it:4.653s) Data:0.538s (it:0.456s) Loss 1.0681e+03 Loss Seg 1.1928e+03 Loss Spot 1.0622e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:21<00:00,  4.59s/it]\
+Train 114: Time 6.214s (it:6.113s) Data:0.544s (it:0.500s) Loss 1.0385e+03 Loss Seg 1.2044e+03 Loss Spot 1.0325e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:54<00:00,  6.21s/it]\
+Evaluate 114: Time 4.353s (it:4.330s) Data:0.538s (it:0.457s) Loss 1.1144e+03 Loss Seg 1.0822e+03 Loss Spot 1.1090e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:08<00:00,  4.35s/it]\
+Train 115: Time 6.231s (it:6.286s) Data:0.543s (it:0.497s) Loss 1.0171e+03 Loss Seg 1.2263e+03 Loss Spot 1.0110e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.23s/it]\
+Evaluate 115: Time 4.266s (it:4.255s) Data:0.498s (it:0.452s) Loss 1.0501e+03 Loss Seg 1.2651e+03 Loss Spot 1.0438e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:03<00:00,  4.27s/it]\
+Train 116: Time 6.284s (it:6.190s) Data:0.590s (it:0.500s) Loss 1.0828e+03 Loss Seg 1.1187e+03 Loss Spot 1.0772e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.28s/it]\
+Evaluate 116: Time 4.401s (it:4.432s) Data:0.497s (it:0.454s) Loss 1.0566e+03 Loss Seg 1.0283e+03 Loss Spot 1.0515e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:10<00:00,  4.40s/it]\
+Train 117: Time 6.283s (it:6.070s) Data:0.592s (it:0.499s) Loss 1.0565e+03 Loss Seg 1.1666e+03 Loss Spot 1.0507e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:58<00:00,  6.28s/it]\
+Evaluate 117: Time 4.431s (it:4.564s) Data:0.495s (it:0.453s) Loss 1.0625e+03 Loss Seg 1.1041e+03 Loss Spot 1.0570e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:12<00:00,  4.43s/it]\
+Train 118: Time 6.241s (it:6.222s) Data:0.543s (it:0.501s) Loss 1.0719e+03 Loss Seg 1.0263e+03 Loss Spot 1.0668e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.24s/it]\
+Evaluate 118: Time 42.979s (it:4.317s) Data:5.689s (it:0.454s) Loss 1.0861e+03 Loss Seg 1.0353e+03 Loss Spot 1.0809e+03 : 100%|\uc0\u9608 | 57/57 [40:49<00:00, 42.98s/it]\
+Train 119: Time 6.245s (it:6.200s) Data:0.541s (it:0.495s) Loss 1.0540e+03 Loss Seg 1.1586e+03 Loss Spot 1.0482e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.25s/it]\
+Evaluate 119: Time 4.474s (it:5.041s) Data:0.561s (it:0.604s) Loss 1.1456e+03 Loss Seg 1.0595e+03 Loss Spot 1.1403e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:15<00:00,  4.47s/it]\
+Train 120: Time 6.819s (it:6.656s) Data:0.655s (it:0.589s) Loss 1.0750e+03 Loss Seg 1.1690e+03 Loss Spot 1.0691e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [06:28<00:00,  6.82s/it]\
+Evaluate 120: Time 4.811s (it:4.968s) Data:0.575s (it:0.552s) Loss 1.2043e+03 Loss Seg 1.0416e+03 Loss Spot 1.1991e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:34<00:00,  4.81s/it]\
+Train 121: Time 7.103s (it:7.045s) Data:0.754s (it:0.646s) Loss 1.1025e+03 Loss Seg 1.0577e+03 Loss Spot 1.0972e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [06:44<00:00,  7.10s/it]\
+Evaluate 121: Time 4.707s (it:4.838s) Data:0.567s (it:0.518s) Loss 1.0649e+03 Loss Seg 1.1289e+03 Loss Spot 1.0592e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:28<00:00,  4.71s/it]\
+Train 122: Time 7.177s (it:7.138s) Data:0.765s (it:0.685s) Loss 1.0980e+03 Loss Seg 1.1750e+03 Loss Spot 1.0922e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [06:49<00:00,  7.18s/it]\
+Evaluate 122: Time 4.805s (it:5.118s) Data:0.561s (it:0.560s) Loss 1.1557e+03 Loss Seg 1.0819e+03 Loss Spot 1.1503e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:33<00:00,  4.81s/it]\
+Train 123: Time 7.136s (it:6.676s) Data:0.724s (it:0.598s) Loss 1.0401e+03 Loss Seg 1.1547e+03 Loss Spot 1.0343e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [06:46<00:00,  7.14s/it]\
+Evaluate 123: Time 4.753s (it:4.951s) Data:0.630s (it:0.583s) Loss 1.0820e+03 Loss Seg 9.8645e+02 Loss Spot 1.0771e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:30<00:00,  4.75s/it]\
+Train 124: Time 19.326s (it:6.102s) Data:0.680s (it:0.500s) Loss 1.0768e+03 Loss Seg 1.0372e+03 Loss Spot 1.0716e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 | 57/57 [18:21<00:00, 19.33s/it]\
+Evaluate 124: Time 4.420s (it:4.401s) Data:0.541s (it:0.457s) Loss 1.2117e+03 Loss Seg 1.0162e+03 Loss Spot 1.2066e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:11<00:00,  4.42s/it]\
+Train 125: Time 6.236s (it:6.328s) Data:0.544s (it:0.503s) Loss 1.0715e+03 Loss Seg 1.0306e+03 Loss Spot 1.0663e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:55<00:00,  6.24s/it]\
+Evaluate 125: Time 4.534s (it:4.425s) Data:0.500s (it:0.454s) Loss 1.1392e+03 Loss Seg 9.4399e+02 Loss Spot 1.1344e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:18<00:00,  4.53s/it]\
+Train 126: Time 6.312s (it:6.063s) Data:0.581s (it:0.504s) Loss 1.0158e+03 Loss Seg 1.0549e+03 Loss Spot 1.0105e+03 : 100%|\uc0\u9608 \u9608 \u9608 \u9608 \u9608 | 57/57 [05:59<00:00,  6.31s/it]\
+Evaluate 126: Time 4.604s (it:4.822s) Data:0.501s (it:0.462s) Loss 1.0954e+03 Loss Seg 9.3835e+02 Loss Spot 1.0907e+03 : 100%|\uc0\u9608 \u9608 | 57/57 [04:22<00:00,  4.60s/it]\
+  0%|                                                                                                                                    | 0/57 [00:00<?, ?it/s]}

@@ -54,7 +54,7 @@ class CALFData(Dataset):
         logging.info("Preprocessing Data")
         self.listGames = find_files("../football_games")
         if split == "train":
-            DM = DataManager(files=self.listGames[0:55], framerate=args.framerate/25, alive=False)
+            DM = DataManager(files=self.listGames[0:1], framerate=args.framerate/25, alive=False)
         elif split == "validate":
             DM = DataManager(files=self.listGames[55:], framerate=args.framerate/25, alive=False)
         DM.read_games()
@@ -166,7 +166,7 @@ class CALFData(Dataset):
         clip_representation = None
         clip_representation = copy.deepcopy(self.game_representation[game_index][start:start+self.chunk_size])
         cntr+=1
-        return torch.from_numpy(clip_labels), torch.from_numpy(clip_targets), [clip_representation]
+        return torch.from_numpy(clip_labels), torch.from_numpy(clip_targets), clip_representation
     
     def __len__(self):
         return self.chunks_per_epoch
@@ -176,7 +176,7 @@ def collateGCN(list_of_examples):
     # tensors = [x[1] for x in list_of_examples]
     return torch.stack([x[0] for x in list_of_examples], dim=0), \
             torch.stack([x[1] for x in list_of_examples], dim=0), \
-            Batch.from_data_list([Batch.from_data_list(x) for b in list_of_examples for x in b[2] ])
+            Batch.from_data_list([x for b in list_of_examples for x in b[2]])
 
 
 

@@ -21,6 +21,29 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
+class LossHolder(object):
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.losses_train_list = []
+        self.losses_valid_list = []
+        
+        self.losses_train_seg_list = []
+        self.losses_valid_seg_list = []
+        
+        self.losses_train_spot_list = []
+        self.losses_valid_spot_list = []
+
+    def update(self, total_train, seg_train, spot_train, total_valid, seg_valid, spot_valid):
+        self.losses_train_list.append(total_train)
+        self.losses_valid_list.append(total_valid)
+        self.losses_train_seg_list.append(seg_train)
+        self.losses_valid_seg_list.append(seg_valid)
+        self.losses_train_spot_list.append(spot_train)
+        self.losses_valid_spot_list.append(spot_valid)
+
+
 def NMS(detections, delta):
     
     # Array to put the results of the NMS
