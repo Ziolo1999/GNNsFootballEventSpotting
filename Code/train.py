@@ -1,13 +1,13 @@
 import logging
 import os
-from metrics_visibility_fast import AverageMeter, average_mAP, NMS, LossHolder
+from helpers.metrics_visibility_fast import AverageMeter, average_mAP, NMS, LossHolder
 import time
 from tqdm import tqdm
 import torch
 import numpy as np
 import math
-# from preprocessing import batch2long, timestamps2long
-# from json_io import predictions2json
+# from helpers.preprocessing import batch2long, timestamps2long
+# from helpers.json_io import predictions2json
 
 
 def trainer(train_loader,

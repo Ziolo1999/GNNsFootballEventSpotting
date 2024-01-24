@@ -13,21 +13,18 @@ import seaborn as sns
 from matplotlib.collections import LineCollection
 
 class DatasetPreprocessor:
-    """ Data class used for preprocessing of the positional data """
+    """ Data class used for preprocessing of the positional data and generation of the annotations"""
     def __init__(self, sample_rate: float, name, alive: bool = False) -> None:
+        
         self.alive = alive
         self.dataset = None
         self.sample_rate = sample_rate
         self.switch_frames = None
         self.role_cluster = {}
         self.role_amount = 0
-
+        
         # dataframes
-        self.home_df = None # df from view of home team
-        self.away_df = None # df from view of away team
         self.unique_player_df = None # df with all players
-        self.role_player_df = None # df with cluster nr for each player currently on field
-        self.phase_df = None
 
         # parse helpers
         self.ball_dist = None
@@ -43,7 +40,8 @@ class DatasetPreprocessor:
             self.belgium_role = "home"
         else:
             self.belgium_role = "away"
-        # discovered during data exploration
+
+        # missing players discovered during data exploration
         self.name = name
         self.red_card_games = ['BEL-GRE','BEL-RUS', 'AUS-BEL']
         self.missing_players_games = ['NED-BEL', 'ICE-BEL']
@@ -136,7 +134,6 @@ class DatasetPreprocessor:
                         opposing_counter += 1
             if len(self.player_encoder.keys())==22:
                 break
-        # print(f"All players detected at the {frame.timestamp} timestamp")
     
     def _get_player_presence(self):
         # get starting players and note their occurence
@@ -241,6 +238,7 @@ class DatasetPreprocessor:
         self.ball_coords = []
         self.game_details = []
         player_violation = []
+
         # find substitutions
         self.substitution_detection()
         for index, frame in enumerate(self.dataset.frames):

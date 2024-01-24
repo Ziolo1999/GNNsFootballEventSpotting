@@ -23,16 +23,14 @@ import os
 import torch
 
 import logging
-import json
 
-from classes import EVENT_DICTIONARY_V2, K_V2, EVENT_DICTIONARY_V2_VISUAL, K_V2_VISUAL, EVENT_DICTIONARY_V2_NONVISUAL, K_V2_NONVISUAL, EVENT_DICTIONARY_V2_ALIVE, K_V2_ALIVE
+from helpers.classes import EVENT_DICTIONARY_V2_ALIVE, K_V2_ALIVE
 
-from preprocessing import oneHotToShifts, getTimestampTargets, getChunks_anchors, unproject_image_point, meter2radar
+from helpers.preprocessing import oneHotToShifts, getTimestampTargets, getChunks_anchors
 
 from torch_geometric.data import Data
 from torch_geometric.data import Batch
 import copy
-import cv2
 from dataclasses import dataclass
     
 
@@ -56,7 +54,7 @@ class CALFData(Dataset):
         if split == "train":
             DM = DataManager(files=self.listGames[0:1], framerate=args.framerate/25, alive=False)
         elif split == "validate":
-            DM = DataManager(files=self.listGames[55:], framerate=args.framerate/25, alive=False)
+            DM = DataManager(files=self.listGames[55:56], framerate=args.framerate/25, alive=False)
         DM.read_games()
 
 
@@ -67,19 +65,7 @@ class CALFData(Dataset):
         self.framerate = args.framerate
 
 
-        if self.args.class_split is None:
-            self.dict_event = EVENT_DICTIONARY_V2
-            self.K_parameters = K_V2*args.framerate 
-            self.num_classes = 17
-        elif self.args.class_split == "visual":
-            self.dict_event = EVENT_DICTIONARY_V2_VISUAL
-            self.K_parameters = K_V2_VISUAL*args.framerate 
-            self.num_classes = 8
-        elif self.args.class_split == "nonvisual":
-            self.dict_event = EVENT_DICTIONARY_V2_NONVISUAL
-            self.K_parameters = K_V2_NONVISUAL*args.framerate 
-            self.num_classes = 9
-        elif self.args.class_split == "alive":
+        if self.args.class_split == "alive":
             self.dict_event = EVENT_DICTIONARY_V2_ALIVE
             self.K_parameters = K_V2_ALIVE*args.framerate 
             self.num_classes = 2
@@ -142,7 +128,7 @@ class CALFData(Dataset):
         event_selection = random.randint(0, len(self.game_anchors[class_selection])-1)
         game_index = self.game_anchors[class_selection][event_selection][0]
         anchor = self.game_anchors[class_selection][event_selection][1]
-        # Prevents size mismatch when events from the end of a game are selected
+        # Prevents size mismatch when events from the end of the game are selected
         while (anchor < self.chunk_size) or (anchor > self.game_size[game_index]-self.chunk_size):
             event_selection = random.randint(0, len(self.game_anchors[class_selection])-1)
             game_index = self.game_anchors[class_selection][event_selection][0]

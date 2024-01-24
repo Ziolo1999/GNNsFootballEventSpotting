@@ -1,2 +1,4 @@
-1) Gather framerate (fps) info and use that to generate proper feature matrix - Used by CALFData and DataManager so they will compatible
-2) 
+1. Apply GPU
+2. Finish presentation
+3. Think about further stats from annotations
+

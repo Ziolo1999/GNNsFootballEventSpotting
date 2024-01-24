@@ -2,14 +2,14 @@ from DataManager import CALFData, DataManager, collateGCN
 from FileFinder import MatchFile, find_files
 from DataPreprocessing import DatasetPreprocessor
 import numpy as np
-from classes import EVENT_DICTIONARY_V2, K_V2, EVENT_DICTIONARY_V2_VISUAL, K_V2_VISUAL, EVENT_DICTIONARY_V2_NONVISUAL, K_V2_NONVISUAL, EVENT_DICTIONARY_V2_ALIVE, K_V2_ALIVE
-from preprocessing import oneHotToShifts, getTimestampTargets, getChunks_anchors, unproject_image_point, meter2radar
+from helpers.classes import EVENT_DICTIONARY_V2, K_V2, EVENT_DICTIONARY_V2_VISUAL, K_V2_VISUAL, EVENT_DICTIONARY_V2_NONVISUAL, K_V2_NONVISUAL, EVENT_DICTIONARY_V2_ALIVE, K_V2_ALIVE
+from helpers.preprocessing import oneHotToShifts, getTimestampTargets, getChunks_anchors, unproject_image_point, meter2radar
 import torch 
 import random
 import copy
 from tqdm import tqdm
 from Model import ContextAwareModel
-from loss import ContextAwareLoss, SpottingLoss
+from Code.helpers.loss import ContextAwareLoss, SpottingLoss
 from train import trainer
 
 from torch_geometric.data import Data
@@ -90,3 +90,9 @@ losses = trainer(train_loader, validate_loader,
                 model, optimizer, scheduler, [criterion_segmentation, criterion_spotting], [args.loss_weight_segmentation, args.loss_weight_detection],
                 model_name=args.model_name,
                 max_epochs=args.max_epochs, evaluation_frequency=args.evaluation_frequency)
+
+files = find_files("../football_games")
+dataset = DatasetPreprocessor(1/5, files[15].name)
+dataset.open_dataset(files[15].datafile, files[15].metafile)
+dataset.dataset.frames[1388].timestamp
+60*45*5
