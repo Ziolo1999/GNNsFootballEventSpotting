@@ -107,11 +107,10 @@ def generate_annotations(xml_path, framerate, total_frames):
 
 annotations = generate_annotations(xml_path,framerate,total_frames)
 
-
 # Occurence of annotations
 plt.bar(ann.occurences.keys(), ann.occurences.values())
 plt.show()
 
 # Average length
-plt.bar(list(ann.avg_length.keys())[1:], ann.avg_length.values()[1:])
+plt.bar(list(ann.avg_length.keys())[1:], list(ann.avg_length.values())[1:])
 plt.show()

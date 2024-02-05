@@ -6,7 +6,6 @@ import torch
 # Context-aware loss function
 
 ####################################################################################################################################################
-
 class ContextAwareLoss(torch.nn.Module):
 
     def __init__(self, K, hit_radius = 0.1, miss_radius = 0.9):
@@ -17,17 +16,36 @@ class ContextAwareLoss(torch.nn.Module):
         self.hit_radius = float(hit_radius)
         self.miss_radius = float(miss_radius)
 
-    def forward(self, gt_label, pred_score):
-
-        params = self.K
+    def forward(self, gt_label, pred_score, device):
+        params = self.K.to(device)
         hit_radius = self.hit_radius
         miss_radius = self.miss_radius
         y_true = gt_label
         y_pred = pred_score
-        
-        loss = torch.sum(-torch.min(0.*y_true,torch.sign(y_true))*torch.max(0.*y_pred,-torch.log(y_pred+(1.-y_pred)*(torch.min(torch.max(y_true,params[0,:]),params[1,:])-params[0,:])/(params[1,:]-params[0,:]))+torch.log(torch.tensor(miss_radius)))+(1.-torch.max(0.*y_true,torch.sign(-y_true)))*torch.max(0.*y_pred,torch.max(-torch.log(1.-y_pred+torch.abs(y_true)/params[2,:])+torch.log(1.-torch.tensor(hit_radius)),-torch.log(y_pred+(torch.min(y_true,params[3,:])-params[3,:])/(params[2,:]-params[3,:]))+torch.log(torch.tensor(miss_radius)))))
-        
+        loss = torch.sum(-torch.min(0.*y_true,torch.sign(y_true))*torch.max(0.*y_pred,-torch.log(y_pred+(1.-y_pred)*(torch.min(torch.max(y_true,params[0,:]),params[1,:])-params[0,:])/(params[1,:]-params[0,:]))+torch.log(torch.tensor(miss_radius).to(device)))+(1.-torch.max(0.*y_true,torch.sign(-y_true)))*torch.max(0.*y_pred,torch.max(-torch.log(1.-y_pred+torch.abs(y_true)/params[2,:])+torch.log(1.-torch.tensor(hit_radius).to(device)),-torch.log(y_pred+(torch.min(y_true,params[3,:])-params[3,:])/(params[2,:]-params[3,:]))+torch.log(torch.tensor(miss_radius).to(device)))))
         return loss
+
+# class ContextAwareLoss(torch.nn.Module):
+
+#     def __init__(self, K, hit_radius = 0.1, miss_radius = 0.9):
+
+#         super(ContextAwareLoss,self).__init__()
+
+#         self.K = K
+#         self.hit_radius = float(hit_radius)
+#         self.miss_radius = float(miss_radius)
+
+#     def forward(self, gt_label, pred_score):
+
+#         params = self.K
+#         hit_radius = self.hit_radius
+#         miss_radius = self.miss_radius
+#         y_true = gt_label
+#         y_pred = pred_score
+        
+#         loss = torch.sum(-torch.min(0.*y_true,torch.sign(y_true))*torch.max(0.*y_pred,-torch.log(y_pred+(1.-y_pred)*(torch.min(torch.max(y_true,params[0,:]),params[1,:])-params[0,:])/(params[1,:]-params[0,:]))+torch.log(torch.tensor(miss_radius)))+(1.-torch.max(0.*y_true,torch.sign(-y_true)))*torch.max(0.*y_pred,torch.max(-torch.log(1.-y_pred+torch.abs(y_true)/params[2,:])+torch.log(1.-torch.tensor(hit_radius)),-torch.log(y_pred+(torch.min(y_true,params[3,:])-params[3,:])/(params[2,:]-params[3,:]))+torch.log(torch.tensor(miss_radius)))))
+        
+#         return loss
 
 ####################################################################################################################################################
 

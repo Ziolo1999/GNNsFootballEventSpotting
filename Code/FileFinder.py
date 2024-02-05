@@ -42,29 +42,6 @@ def find_files(folder: str, decompress: bool=False):
                     dat_file = f
                 elif re.search(pattern_xml, f):
                     xml_file = f
-                # if f[-4:] == ".dat":
-                #     if dat_file is None:
-                #         dat_file = f
-                #     else:
-                #         if "PosData_Live" in f :
-                #             logging.warn(f"Multiple dat files in {root}! Chosed {f}.")
-                #             dat_file = f
-
-                # elif f[-4:] == ".xml":
-                #     if "annotated" in f:
-                #         if ann_file is None:
-                #             ann_file = f
-                #         else:
-                #             logging.warn(f"Multiple annotation files in {root}!")
-
-                #     else:
-                #         if xml_file is None:
-                #             xml_file = f
-                #         else:
-                #             pattern = r'\d+_metadata'
-                #             if ("PosData_Live" in f) or (re.match(pattern, f)):
-                #                 logging.warn(f"Multiple xml (metadata) files in {root}! Chosed {f}.")
-                #                 xml_file = f
 
             if dat_file is None or xml_file is None:
                 if dat_file is None:

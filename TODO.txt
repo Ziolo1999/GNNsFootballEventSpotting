@@ -1,0 +1,5 @@
+-> Check the loss values on the original data,
+-> Optimise data reader too much RAM,
+-> Verify the evaluation part takes more GPU RAM then training part?
+-> Optimise loss calculations, thakes most of the memory and slows down 
+the training

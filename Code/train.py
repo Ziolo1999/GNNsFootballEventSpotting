@@ -151,7 +151,6 @@ def train(dataloader,
                 device = torch.device("cuda")
             else:
                 device = torch.device("cpu")
-            
             labels = labels.float().type(torch.float32).to(device)
             targets = targets.float().type(torch.float32).to(device)
             model = model.to(device)
@@ -165,7 +164,7 @@ def train(dataloader,
             # compute output
             output_segmentation, output_spotting = model(representations)
 
-            loss_segmentation = criterion[0](labels, output_segmentation) 
+            loss_segmentation = criterion[0](labels, output_segmentation, device) 
             loss_spotting = criterion[1](targets, output_spotting)
 
             loss = weights[0]*loss_segmentation + weights[1]*loss_spotting

@@ -90,37 +90,38 @@ class ContextAwareModel(nn.Module):
             r_concatenation = self.forward_GCN(representation_inputs)
             full_concatenation = r_concatenation
 
+        print(f"Concatenation size: {full_concatenation.size()}")
+
         # -------------------
         # Segmentation module
         # -------------------
-
         conv_seg = self.conv_seg(self.pad_seg(full_concatenation))
-        #print("Conv_seg size: ", conv_seg.size())
-        #print(torch.cuda.memory_allocated()/10**9)
+        print("Conv_seg size: ", conv_seg.size())
+        # print(torch.cuda.memory_allocated()/10**9)
 
         conv_seg_permuted = conv_seg.permute(0,2,3,1)
-        #print("Conv_seg_permuted size: ", conv_seg_permuted.size())
-        #print(torch.cuda.memory_allocated()/10**9)
+        print("Conv_seg_permuted size: ", conv_seg_permuted.size())
+        # print(torch.cuda.memory_allocated()/10**9)
 
         conv_seg_reshaped = conv_seg_permuted.view(conv_seg_permuted.size()[0],conv_seg_permuted.size()[1],self.dim_capsule,self.num_classes)
-        #print("Conv_seg_reshaped size: ", conv_seg_reshaped.size())
-        #print(torch.cuda.memory_allocated()/10**9)
+        print("Conv_seg_reshaped size: ", conv_seg_reshaped.size())
+        # print(torch.cuda.memory_allocated()/10**9)
 
 
         #conv_seg_reshaped_permuted = conv_seg_reshaped.permute(0,3,1,2)
         #print("Conv_seg_reshaped_permuted size: ", conv_seg_reshaped_permuted.size())
 
         conv_seg_norm = torch.sigmoid(self.batch_seg(conv_seg_reshaped))
-        #print("Conv_seg_norm: ", conv_seg_norm.size())
-        #print(torch.cuda.memory_allocated()/10**9)
+        print("Conv_seg_norm: ", conv_seg_norm.size())
+        # print(torch.cuda.memory_allocated()/10**9)
 
 
         #conv_seg_norm_permuted = conv_seg_norm.permute(0,2,3,1)
         #print("Conv_seg_norm_permuted size: ", conv_seg_norm_permuted.size())
 
         output_segmentation = torch.sqrt(torch.sum(torch.square(conv_seg_norm-0.5), dim=2)*4/self.dim_capsule)
-        #print("Output_segmentation size: ", output_segmentation.size())
-        #print(torch.cuda.memory_allocated()/10**9)
+        print("Output_segmentation size: ", output_segmentation.size())
+        # print(torch.cuda.memory_allocated()/10**9)
 
 
         # ---------------
@@ -129,58 +130,57 @@ class ContextAwareModel(nn.Module):
 
         # Concatenation of the segmentation score to the capsules
         output_segmentation_reverse = 1-output_segmentation
-        #print("Output_segmentation_reverse size: ", output_segmentation_reverse.size())
+        print("Output_segmentation_reverse size: ", output_segmentation_reverse.size())
         #print(torch.cuda.memory_allocated()/10**9)
 
         output_segmentation_reverse_reshaped = output_segmentation_reverse.unsqueeze(2)
-        #print("Output_segmentation_reverse_reshaped size: ", output_segmentation_reverse_reshaped.size())
+        print("Output_segmentation_reverse_reshaped size: ", output_segmentation_reverse_reshaped.size())
         #print(torch.cuda.memory_allocated()/10**9)
 
-
         output_segmentation_reverse_reshaped_permutted = output_segmentation_reverse_reshaped.permute(0,3,1,2)
-        #print("Output_segmentation_reverse_reshaped_permutted size: ", output_segmentation_reverse_reshaped_permutted.size())
+        print("Output_segmentation_reverse_reshaped_permutted size: ", output_segmentation_reverse_reshaped_permutted.size())
         #print(torch.cuda.memory_allocated()/10**9)
 
         concatenation_2 = torch.cat((conv_seg, output_segmentation_reverse_reshaped_permutted), dim=1)
-        #print("Concatenation_2 size: ", concatenation_2.size())
+        print("Concatenation_2 size: ", concatenation_2.size())
         #print(torch.cuda.memory_allocated()/10**9)
 
         conv_spot = self.max_pool_spot(F.relu(concatenation_2))
-        #print("Conv_spot size: ", conv_spot.size())
+        print("Conv_spot size: ", conv_spot.size())
         #print(torch.cuda.memory_allocated()/10**9)
 
         conv_spot_1 = F.relu(self.conv_spot_1(self.pad_spot_1(conv_spot)))
-        #print("Conv_spot_1 size: ", conv_spot_1.size())
+        print("Conv_spot_1 size: ", conv_spot_1.size())
         #print(torch.cuda.memory_allocated()/10**9)
 
         conv_spot_1_pooled = self.max_pool_spot_1(conv_spot_1)
-        #print("Conv_spot_1_pooled size: ", conv_spot_1_pooled.size())
+        print("Conv_spot_1_pooled size: ", conv_spot_1_pooled.size())
         #print(torch.cuda.memory_allocated()/10**9)
 
         conv_spot_2 = F.relu(self.conv_spot_2(self.pad_spot_2(conv_spot_1_pooled)))
-        #print("Conv_spot_2 size: ", conv_spot_2.size())
+        print("Conv_spot_2 size: ", conv_spot_2.size())
         #print(torch.cuda.memory_allocated()/10**9)
 
         conv_spot_2_pooled = self.max_pool_spot_2(conv_spot_2)
-        #print("Conv_spot_2_pooled size: ", conv_spot_2_pooled.size())
+        print("Conv_spot_2_pooled size: ", conv_spot_2_pooled.size())
         #print(torch.cuda.memory_allocated()/10**9)
 
         spotting_reshaped = conv_spot_2_pooled.view(conv_spot_2_pooled.size()[0],-1,1,1)
-        #print("Spotting_reshape size: ", spotting_reshaped.size())
+        print("Spotting_reshape size: ", spotting_reshaped.size())
         #print(torch.cuda.memory_allocated()/10**9)
 
         # Confindence branch
         conf_pred = torch.sigmoid(self.conv_conf(spotting_reshaped).view(spotting_reshaped.shape[0],self.num_detections,2))
-        #print("Conf_pred size: ", conf_pred.size())
+        print("Conf_pred size: ", conf_pred.size())
         #print(torch.cuda.memory_allocated()/10**9)
 
         # Class branch
         conf_class = self.softmax(self.conv_class(spotting_reshaped).view(spotting_reshaped.shape[0],self.num_detections,self.num_classes))
-        #print("Conf_class size: ", conf_class.size())
+        print("Conf_class size: ", conf_class.size())
         #print(torch.cuda.memory_allocated()/10**9)
 
         output_spotting = torch.cat((conf_pred,conf_class),dim=-1)
-        #print("Output_spotting size: ", output_spotting.size())
+        print("Output_spotting size: ", output_spotting.size())
         #print(torch.cuda.memory_allocated()/10**9)
 
 
