@@ -1,6 +1,0 @@
-1. Apply GPU
-2. Finish presentation
-3. Think about further stats from annotations
-4. Check loss values on their dataset
-
-

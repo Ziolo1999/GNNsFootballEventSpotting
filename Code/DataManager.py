@@ -11,9 +11,6 @@ import logging
 from torch_geometric.data import Data
 from torch.utils.data import Dataset
 
-
-from torch.utils.data import Dataset
-
 import numpy as np
 import random
 # import pandas as pd
@@ -177,6 +174,7 @@ class DataManager():
         self.alive = alive
         self.annotations = []
 
+
         if files is None:
             files = find_files("../data/EC2020")
 
@@ -192,9 +190,12 @@ class DataManager():
         assert len(self.home) == len(self.files)
         assert len(self.home) == len(self.away)
 
-    def read_games(self):
+    def read_games(self, ball_coords:bool=False):
         """ Reads all games and provides list features and edges matrices 
         """
+        if ball_coords:
+            self.ball_coords = []
+
         for f in tqdm(self.files, desc="Data preprocessing"):
             logging.info(f"Reading file {f.datafile}")
             dataset = DatasetPreprocessor(self.framerate, f.name, self.alive)
@@ -208,6 +209,8 @@ class DataManager():
             self.edges.append(dataset.edges)
             self.matches.append(f.name)
             self.annotations.append(dataset.annotations)
+            if ball_coords:
+                self.ball_coords.append(dataset.ball_coords)
             del dataset
     
     def player_violation(self):

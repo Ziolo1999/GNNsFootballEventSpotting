@@ -20,19 +20,9 @@ class DatasetPreprocessor:
         self.dataset = None
         self.sample_rate = sample_rate
         self.switch_frames = None
-        self.role_cluster = {}
-        self.role_amount = 0
-        
-        # dataframes
-        self.unique_player_df = None # df with all players
 
         # parse helpers
-        self.ball_dist = None
-        self.ball_owner_cutoff = 1
-        self.parsed_result = {}
-        self.parse_data = []
         self.pitch = None
-        self.skip_counter = 0
         self.fps = 4   
 
         # helpers for data preprocessing
@@ -71,12 +61,10 @@ class DatasetPreprocessor:
             )
 
         self.dataset = dataset
-        self.unique_player_df = to_pandas(dataset)
-        self.unique_player_df = self.unique_player_df.loc[self.unique_player_df["ball_state"] == "alive"] 
         self.pitch = dataset.metadata.pitch_dimensions
         self.fps = int(self.sample_rate * dataset.metadata.frame_rate)
         # get belgium coords to determine their field side
-        belgium_x_coord = [playerdata.coordinates.x for player, playerdata in dataset.frames[0].players_data.items()  if player.player_id[0:4]==self.belgium_role]
+        belgium_x_coord = [playerdata.coordinates.x for player, playerdata in dataset.frames[0].players_data.items() if player.player_id[0:4]==self.belgium_role]
         self.belgium_field_part = "left" if min(belgium_x_coord)<0.4 else "right"
     
     def substitution_detection(self) -> dict:
@@ -166,12 +154,12 @@ class DatasetPreprocessor:
                 ball_coord = np.array([frame.ball_coordinates.x, frame.ball_coordinates.y])
                 
             elif (self.belgium_field_part == "left") & (frame.period.id == 2):
-                player_coord = [1-playerdata.coordinates.x, playerdata.coordinates.y]
-                ball_coord = np.array([1-frame.ball_coordinates.x, frame.ball_coordinates.y])
+                player_coord = [1-playerdata.coordinates.x, 1-playerdata.coordinates.y]
+                ball_coord = np.array([1-frame.ball_coordinates.x, 1-frame.ball_coordinates.y])
                 
             elif (self.belgium_field_part == "right") & (frame.period.id == 1):
-                player_coord = [1-playerdata.coordinates.x, playerdata.coordinates.y]
-                ball_coord = np.array([1-frame.ball_coordinates.x, frame.ball_coordinates.y])
+                player_coord = [1-playerdata.coordinates.x, 1-playerdata.coordinates.y]
+                ball_coord = np.array([1-frame.ball_coordinates.x, 1-frame.ball_coordinates.y])
                 
             else:
                 player_coord = [playerdata.coordinates.x, playerdata.coordinates.y]
@@ -192,10 +180,10 @@ class DatasetPreprocessor:
                 ball_coord = [frame.ball_coordinates.x, frame.ball_coordinates.y]
                 
             elif (self.belgium_field_part == "left") & (frame.period.id == 2):
-                ball_coord = [1-frame.ball_coordinates.x, frame.ball_coordinates.y]
+                ball_coord = [1-frame.ball_coordinates.x, 1-frame.ball_coordinates.y]
                 
             elif (self.belgium_field_part == "right") & (frame.period.id == 1):
-                ball_coord = [1-frame.ball_coordinates.x, frame.ball_coordinates.y]
+                ball_coord = [1-frame.ball_coordinates.x, 1-frame.ball_coordinates.y]
                 
             else:
                 ball_coord = [frame.ball_coordinates.x, frame.ball_coordinates.y]
