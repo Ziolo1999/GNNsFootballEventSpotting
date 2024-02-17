@@ -157,6 +157,7 @@ class CALFData(Dataset):
 def collateGCN(list_of_examples):
     # data_list = [x[0] for x in list_of_examples]
     # tensors = [x[1] for x in list_of_examples]
+    print([x for b in list_of_examples for x in b[2]])
     return torch.stack([x[0] for x in list_of_examples], dim=0), \
             torch.stack([x[1] for x in list_of_examples], dim=0), \
             Batch.from_data_list([x for b in list_of_examples for x in b[2]])
