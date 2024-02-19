@@ -162,10 +162,17 @@ def train(dataloader,
                 representations = representations.to(targets.device)
 
             # compute output
+            model_start = time.time()
             output_segmentation, output_spotting = model(representations)
+            model_end = time.time()
 
+            seg_start = time.time()
             loss_segmentation = criterion[0](labels, output_segmentation, device) 
+            seg_end = time.time()
+
+            spot_start = time.time()
             loss_spotting = criterion[1](targets, output_spotting)
+            spot_end = time.time()
 
             loss = weights[0]*loss_segmentation + weights[1]*loss_spotting
 
@@ -195,6 +202,9 @@ def train(dataloader,
             desc += f'Loss {losses.avg:.4e} '
             desc += f'Loss Seg {losses_segmentation.avg:.4e} '
             desc += f'Loss Spot {losses_spotting.avg:.4e} '
+            # desc += f'Model Time {model_end-model_start:.4e} '
+            # desc += f'Loss Seg Time {seg_end-seg_start:.4e} '
+            # desc += f'Loss Spot Time {spot_end-spot_start:.4e}'
             t.set_description(desc)
 
     return losses.avg, losses_segmentation.avg, losses_spotting.avg

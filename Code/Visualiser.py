@@ -60,11 +60,15 @@ class Visualiser():
     def __init__(self, collate_fn, args, model, smoothing=False):   
         collate_fn = collate_fn
         data_visualise = VisualiseDataset(args=args)
+        
         visualise_loader = torch.utils.data.DataLoader(data_visualise,
                             batch_size=args.batch_size, shuffle=False, collate_fn=collate_fn)
+        
         concatenated_seg =  np.zeros((int(data_visualise.receptive_field/2),2))
         concatenated_spot =  torch.zeros((int(data_visualise.receptive_field/2),4))
-        annotations = np.empty((0,2))
+        # Set the columns to number of the classes
+        annotations = np.zeros((int(data_visualise.receptive_field/2),2))
+        
         for representation, annotation in visualise_loader:
             segmentation, spotting = model(representation)
             
@@ -208,13 +212,13 @@ class Visualiser():
         # Create a figure
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 15))
         # Draw segmentation plots 
-        seg_alive = ax1.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),0], label='Alive')
+        # seg_alive = ax1.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),0], label='Alive')
         seg_dead = ax1.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),1], label='Dead')
         seg_ann = ax1.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),1], label='Annotations')
         ax1.set_title(f"Segmentation")
         ax1.legend()
         # Draw spotting plots
-        spot_alive = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),2], label='Alive')
+        # spot_alive = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),2], label='Alive')
         spot_dead = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),3], label='Dead')
         spot_ann = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),1], label='Annotations')
         ax2.set_title(f"Spotting")
@@ -231,3 +235,4 @@ class Visualiser():
             predictions = predictions[:self.annotations.shape[0],:]
         mAP = average_precision_score(self.annotations, predictions, average='macro')
         return mAP
+    

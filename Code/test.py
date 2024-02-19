@@ -99,18 +99,65 @@ collate_fn = collateVisGCN
 model_path = "models/Testing_Model/model1.pth.tar"
 model = torch.load(model_path)
 visualiser = Visualiser(collate_fn, args, model, smoothing=True)
-visualiser.visualize(frame_threshold=5000, save_dir="TEST7.mp4", interval=60)
-pred = visualiser.spotting[:5360,2:]
-pred.shape
-visualiser.annotations.shape
-mAP = average_precision_score(visualiser.annotations, pred, average='macro')
-visualiser.annotations[15:17]
+visualiser.plot_predictions(frame_threshold=5000, save_dir="plts/PredictionsPlot.png")
+visualiser.visualize(frame_threshold=5000, save_dir="animations/PredictionsAnnotated.mp4", interval=60)
+mAP = visualiser.calculate_MAP()
 
-# Example predicted array and ground truth array
-predicted_array = np.array([[0.8, 0.1, 0.2, 0.5], [0.3, 0.7, 0.2, 0.1], [0.6, 0.4, 0.8, 0.2], [0.9, 0.1, 0.5, 0.3]])
-ground_truth_array = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [1, 0, 0, 1], [0, 0, 1, 0]])
 
-# Calculate mean average precision
-mAP = average_precision_score(ground_truth_array, predicted_array, average='macro')
 
-print("Mean Average Precision:", mAP)
+
+################################################################
+#                         GConvLSTM                            #
+################################################################
+
+import torch
+import torch.nn.functional as F
+from torch_geometric_temporal.nn.recurrent import GConvGRU
+
+class GConvGRUModel(torch.nn.Module):
+
+    def __init__(self, num_classes=2, args=None):
+        super(GConvGRUModel, self).__init__()
+        input_channel, multiplier = args.input_channel, args.feature_multiplier*2
+        self.r_conv_1 = GConvGRU(input_channel, 8*multiplier, 5)
+        self.r_conv_2 = GConvGRU(8*multiplier, 16*multiplier, 4)
+        self.r_conv_3 = GConvGRU(16*multiplier, 32*multiplier, 3)
+        self.r_conv_4 = GConvGRU(32*multiplier, 76*multiplier, 2)
+        self.linear = torch.nn.Linear(76*multiplier, num_classes)
+        self.softmax = torch.nn.Softmax(dim=-1)
+
+    def forward(self, x, edge_index, training=False):
+        x = self.r_conv_1(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=training)
+
+        x = self.r_conv_2(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=training)
+
+        x = self.r_conv_3(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=training)
+
+        x = self.r_conv_4(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x, training=training)
+
+        x = self.linear(x)
+        return self.softmax(x)
+
+gru = GConvGRUModel(args=args)
+
+
+collate_fn = collateGCN
+
+train_dataset = CALFData(split="train", args=args)
+validation_dataset = CALFData(split="validate", args=args)
+
+train_loader = torch.utils.data.DataLoader(train_dataset,
+            batch_size=args.batch_size, shuffle=True, collate_fn=collate_fn)
+
+labels, targets, representations = next(iter(train_loader))
+representations.x.shape
+representations.edge_index
+res = gru(representations.x, representations.edge_index)
