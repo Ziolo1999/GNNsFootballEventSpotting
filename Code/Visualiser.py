@@ -11,6 +11,7 @@ from mplsoccer.pitch import Pitch
 from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt
 from mplsoccer.pitch import Pitch
+from sklearn.metrics import average_precision_score
 
 class VisualiseDataset(Dataset):
     def __init__(self, args):
@@ -51,6 +52,10 @@ class VisualiseDataset(Dataset):
     def __len__(self):
         return int(self.windows_count)
 
+def collateVisGCN(list_of_examples):
+    return Batch.from_data_list([x for b in list_of_examples for x in b[0]]),\
+            np.stack([x[1] for x in list_of_examples], axis=0)
+
 class Visualiser():
     def __init__(self, collate_fn, args, model, smoothing=False):   
         collate_fn = collate_fn
@@ -80,7 +85,7 @@ class Visualiser():
             smooth_ann = int(annotations.shape[0]/args.framerate)
             concatenated_seg = concatenated_seg.reshape((smooth_seg, args.framerate, 2)).mean(axis=1)
             concatenated_spot = concatenated_spot.reshape((smooth_spot, args.framerate, 4)).mean(axis=1)
-            annotations = annotations.reshape((smooth_ann, args.framerate, 2)).mean(axis=1)
+            annotations = annotations.reshape((smooth_ann, args.framerate, 2))[:,0,:]
 
         self.segmentation = concatenated_seg
         self.spotting = concatenated_spot.detach().numpy()
@@ -132,8 +137,8 @@ class Visualiser():
         # spot_alive = ax3.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),2], label='Alive')
         spot_dead = ax3.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),3], label='Dead')
         spot_ann = ax3.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),1], label='Annotations')
-        ax2.set_title(f"Segmentation")
-        ax2.legend()
+        ax3.set_title(f"Spotting")
+        ax3.legend()
 
         def init():
             scat_home.set_offsets(np.array([]).reshape(0, 2))
@@ -153,7 +158,7 @@ class Visualiser():
             scat_away.set_offsets(coords[frame,:,11:].T)
             scat_ball.set_offsets(ball_coords[frame])
             
-            if (self.smoothing) and (frame % args.framerate) == 0:
+            if (self.smoothing) and (frame % self.args.framerate) == 0:
                 # seg_alive[0].set_data(np.arange(0, frame + 1), self.segmentation[:frame+1, 0])
                 seg_dead[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.segmentation[:int(frame*smooth_rate)+1, 1])
                 seg_ann[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.annotations[:int(frame*smooth_rate)+1, 1])
@@ -195,6 +200,34 @@ class Visualiser():
         del coords
         del ball_coords
 
-def collateVisGCN(list_of_examples):
-    return Batch.from_data_list([x for b in list_of_examples for x in b[0]]),\
-            np.stack([x[1] for x in list_of_examples], axis=0)
+    def plot_predictions(self, frame_threshold=None, save_dir=None):
+        # Set the smoothing rate
+        smooth_rate = 1
+        if self.smoothing:
+            smooth_rate = 1/self.args.framerate
+        # Create a figure
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 15))
+        # Draw segmentation plots 
+        seg_alive = ax1.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),0], label='Alive')
+        seg_dead = ax1.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),1], label='Dead')
+        seg_ann = ax1.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),1], label='Annotations')
+        ax1.set_title(f"Segmentation")
+        ax1.legend()
+        # Draw spotting plots
+        spot_alive = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),2], label='Alive')
+        spot_dead = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),3], label='Dead')
+        spot_ann = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),1], label='Annotations')
+        ax2.set_title(f"Spotting")
+        ax2.legend()
+
+        if save_dir != None:
+            plt.savefig(save_dir)
+        else:
+            plt.show()
+    
+    def calculate_MAP(self):
+        predictions = self.spotting[:,2:]
+        if predictions.shape[0] != self.annotations.shape[0]:
+            predictions = predictions[:self.annotations.shape[0],:]
+        mAP = average_precision_score(self.annotations, predictions, average='macro')
+        return mAP

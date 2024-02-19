@@ -100,3 +100,17 @@ model_path = "models/Testing_Model/model1.pth.tar"
 model = torch.load(model_path)
 visualiser = Visualiser(collate_fn, args, model, smoothing=True)
 visualiser.visualize(frame_threshold=5000, save_dir="TEST7.mp4", interval=60)
+pred = visualiser.spotting[:5360,2:]
+pred.shape
+visualiser.annotations.shape
+mAP = average_precision_score(visualiser.annotations, pred, average='macro')
+visualiser.annotations[15:17]
+
+# Example predicted array and ground truth array
+predicted_array = np.array([[0.8, 0.1, 0.2, 0.5], [0.3, 0.7, 0.2, 0.1], [0.6, 0.4, 0.8, 0.2], [0.9, 0.1, 0.5, 0.3]])
+ground_truth_array = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [1, 0, 0, 1], [0, 0, 1, 0]])
+
+# Calculate mean average precision
+mAP = average_precision_score(ground_truth_array, predicted_array, average='macro')
+
+print("Mean Average Precision:", mAP)
