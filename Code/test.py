@@ -27,6 +27,8 @@ from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt
 from mplsoccer.pitch import Pitch
 import os 
+import time
+from helpers.metrics_visibility_fast import AverageMeter
 
 @dataclass
 class Args:
@@ -112,17 +114,17 @@ mAP = visualiser.calculate_MAP()
 
 import torch
 import torch.nn.functional as F
-from torch_geometric_temporal.nn.recurrent import GConvGRU
+from torch_geometric_temporal.nn.recurrent import GConvLSTM
 
-class GConvGRUModel(torch.nn.Module):
+class GConvLSTMModel(torch.nn.Module):
 
     def __init__(self, num_classes=2, args=None):
-        super(GConvGRUModel, self).__init__()
+        super(GConvLSTMModel, self).__init__()
         input_channel, multiplier = args.input_channel, args.feature_multiplier*2
-        self.r_conv_1 = GConvGRU(input_channel, 8*multiplier, 5)
-        self.r_conv_2 = GConvGRU(8*multiplier, 16*multiplier, 4)
-        self.r_conv_3 = GConvGRU(16*multiplier, 32*multiplier, 3)
-        self.r_conv_4 = GConvGRU(32*multiplier, 76*multiplier, 2)
+        self.r_conv_1 = GConvLSTM(input_channel, 8*multiplier, 2)
+        self.r_conv_2 = GConvLSTM(8*multiplier, 16*multiplier, 3)
+        self.r_conv_3 = GConvLSTM(16*multiplier, 32*multiplier, 4)
+        self.r_conv_4 = GConvLSTM(32*multiplier, 76*multiplier, 5)
         self.linear = torch.nn.Linear(76*multiplier, num_classes)
         self.softmax = torch.nn.Softmax(dim=-1)
 
@@ -146,8 +148,50 @@ class GConvGRUModel(torch.nn.Module):
         x = self.linear(x)
         return self.softmax(x)
 
-gru = GConvGRUModel(args=args)
+def training_recurrent(dataloader,
+                        model,
+                        criterion, 
+                        weights,
+                        optimizer,
+                        epoch,
+                        train=False):
 
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+    losses_segmentation = AverageMeter()
+    losses_spotting = AverageMeter()
+    
+    # switch to train mode
+    if train:
+        model.train()
+    else:
+        model.eval()
+        
+    end = time.time()
+
+    with tqdm(enumerate(dataloader), total=len(dataloader), ncols=160) as t:
+        for i, (labels, _, representations) in t: 
+            data_time.update(time.time() - end)
+            # if torch.backends.mps.is_available():
+            #     device = torch.device("mps")            
+            if torch.cuda.is_available():
+                device = torch.device("cuda")
+            else:
+                device = torch.device("cpu")
+            
+            labels = labels.float().type(torch.float32).to(device)
+            targets = targets.float().type(torch.float32).to(device)
+            model = model.to(device)
+            representations = representations.to(targets.device)
+
+            # Push through the model
+            output_spotting = model(representations)
+
+    
+
+
+gru = GConvLSTMModel(args=args)
 
 collate_fn = collateGCN
 

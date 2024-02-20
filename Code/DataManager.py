@@ -145,7 +145,6 @@ class CALFData(Dataset):
             
         # Get the spotting target
         clip_targets = getTimestampTargets(np.array([clip_labels]), self.num_detections)[0]
-
         clip_representation = None
         clip_representation = copy.deepcopy(self.game_representation[game_index][start:start+self.chunk_size])
         cntr+=1
@@ -174,7 +173,6 @@ class DataManager():
         self.alive = alive
         self.annotations = []
 
-
         if files is None:
             files = find_files("../data/EC2020")
 
@@ -199,12 +197,11 @@ class DataManager():
         for f in tqdm(self.files, desc="Data preprocessing"):
             logging.info(f"Reading file {f.datafile}")
             dataset = DatasetPreprocessor(self.framerate, f.name, self.alive)
-            dataset.open_dataset(f.datafile, f.metafile)
+            dataset.open_dataset(f.datafile, f.metafile, f.annotatedfile)
             player_violation = dataset._generate_node_features()
             if len(player_violation)>0:
                 logging.warning(f"Match {f.name} does not have 11 players in the {len(player_violation)} frames.")
             dataset._generate_edges(threshold=0.2)
-            dataset._generate_annotaions()
             self.datasets.append(dataset.matrix)
             self.edges.append(dataset.edges)
             self.matches.append(f.name)

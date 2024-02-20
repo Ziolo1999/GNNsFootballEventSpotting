@@ -37,7 +37,7 @@ class DatasetPreprocessor:
         self.missing_players_games = ['NED-BEL', 'ICE-BEL']
 
 
-    def open_dataset(self, datafilepath: str, metafilepath: str) -> TrackingDataset:
+    def open_dataset(self, datafilepath: str, metafilepath: str, annotatedfilepath: str) -> TrackingDataset:
         """Parse file using kloppy lib and create unique player df
 
         Args:
@@ -62,7 +62,9 @@ class DatasetPreprocessor:
 
         self.dataset = dataset
         self.pitch = dataset.metadata.pitch_dimensions
+        self.annotations = np.load(annotatedfilepath)
         self.fps = int(self.sample_rate * dataset.metadata.frame_rate)
+        
         # get belgium coords to determine their field side
         belgium_x_coord = [playerdata.coordinates.x for player, playerdata in dataset.frames[0].players_data.items() if player.player_id[0:4]==self.belgium_role]
         self.belgium_field_part = "left" if min(belgium_x_coord)<0.4 else "right"

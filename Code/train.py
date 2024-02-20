@@ -151,6 +151,7 @@ def train(dataloader,
                 device = torch.device("cuda")
             else:
                 device = torch.device("cpu")
+                
             labels = labels.float().type(torch.float32).to(device)
             targets = targets.float().type(torch.float32).to(device)
             model = model.to(device)

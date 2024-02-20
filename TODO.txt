@@ -6,7 +6,11 @@ the training
 
 Things to cover:
 -> Animation for results interpretation
--> Evaluation statistics
--> Elaborate on using temporal graph neural networks simple models
+-> Get mAP statistics maybe get more create the wrapper
+-> Explore the parameters how they work
+
+-> Elaborate on using temporal graph neural networks simple models issue how to train them 
+-> Experiment on the model 
+
 -> Explain which annotations use and start thinking about the parameters based on the game u received
 
