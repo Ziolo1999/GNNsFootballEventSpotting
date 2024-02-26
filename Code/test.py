@@ -205,3 +205,24 @@ labels, targets, representations = next(iter(train_loader))
 representations.x.shape
 representations.edge_index
 res = gru(representations.x, representations.edge_index)
+
+
+
+
+chunk_size = args.chunk_size*args.framerate
+receptive_field = args.receptive_field*args.framerate
+
+listGames = find_files("../football_games")
+DM = DataManager(files=listGames[0:1], framerate=args.framerate/25, alive=False)
+DM.read_games()
+game_counter = 0
+K_parameters = K_V2_ALIVE*args.framerate 
+shifts = oneHotToShifts(np.array(DM.annotations[0]), K_parameters.numpy())
+anchors = getChunks_anchors(shifts, 0, K_parameters.numpy(), chunk_size, receptive_field)
+
+game_anchors = list()
+for i in np.arange(18):
+    game_anchors.append(list())
+
+for anchor in anchors:
+    game_anchors[anchor[2]].append(anchor)

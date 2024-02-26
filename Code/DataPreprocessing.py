@@ -11,6 +11,7 @@ from mplsoccer.pitch import Pitch
 import logging
 import seaborn as sns
 from matplotlib.collections import LineCollection
+from helpers.classes import EVENT_DICTIONARY_V2_ALIVE as classes_enc
 
 class DatasetPreprocessor:
     """ Data class used for preprocessing of the positional data and generation of the annotations"""
@@ -20,6 +21,8 @@ class DatasetPreprocessor:
         self.dataset = None
         self.sample_rate = sample_rate
         self.switch_frames = None
+        self.first_period_cntr = 0
+        self.second_period_cntr = 0
 
         # parse helpers
         self.pitch = None
@@ -62,8 +65,10 @@ class DatasetPreprocessor:
 
         self.dataset = dataset
         self.pitch = dataset.metadata.pitch_dimensions
-        self.annotations = np.load(annotatedfilepath)
         self.fps = int(self.sample_rate * dataset.metadata.frame_rate)
+        
+        self.first_half_ann = np.load(annotatedfilepath)["array1"]
+        self.second_half_ann = np.load(annotatedfilepath)["array2"]
         
         # get belgium coords to determine their field side
         belgium_x_coord = [playerdata.coordinates.x for player, playerdata in dataset.frames[0].players_data.items() if player.player_id[0:4]==self.belgium_role]
@@ -178,24 +183,26 @@ class DatasetPreprocessor:
         return np.hstack((coord_matrix,ball_dist,player_speed))
     
     def _get_ball_coordinates(self, frame):
-            if (self.belgium_field_part == "left") & (frame.period.id == 1):
-                ball_coord = [frame.ball_coordinates.x, frame.ball_coordinates.y]
-                
-            elif (self.belgium_field_part == "left") & (frame.period.id == 2):
-                ball_coord = [1-frame.ball_coordinates.x, 1-frame.ball_coordinates.y]
-                
-            elif (self.belgium_field_part == "right") & (frame.period.id == 1):
-                ball_coord = [1-frame.ball_coordinates.x, 1-frame.ball_coordinates.y]
-                
-            else:
-                ball_coord = [frame.ball_coordinates.x, frame.ball_coordinates.y]
-            return ball_coord
+        if (self.belgium_field_part == "left") & (frame.period.id == 1):
+            ball_coord = [frame.ball_coordinates.x, frame.ball_coordinates.y]
+            
+        elif (self.belgium_field_part == "left") & (frame.period.id == 2):
+            ball_coord = [1-frame.ball_coordinates.x, 1-frame.ball_coordinates.y]
+            
+        elif (self.belgium_field_part == "right") & (frame.period.id == 1):
+            ball_coord = [1-frame.ball_coordinates.x, 1-frame.ball_coordinates.y]
+            
+        else:
+            ball_coord = [frame.ball_coordinates.x, frame.ball_coordinates.y]
+        return ball_coord
     
     def _get_game_details(self,frame):
         if frame.period.id == 1:
+            self.first_period_cntr += 1
             return frame.timestamp
         elif frame.period.id == 2:
-            return frame.timestamp + 45
+            self.second_period_cntr += 1
+            return frame.timestamp+2700
         
     def _player_violation(self):
         player_violation = []
@@ -203,7 +210,7 @@ class DatasetPreprocessor:
             if frame.period.id == 1:
                 timestamp = frame.timestamp
             elif frame.period.id == 2:
-                timestamp = frame.timestamp+45
+                timestamp = frame.timestamp+2700
             # check if all players are present in the current frame:
             if len(frame.players_coordinates.keys())<22:
                 player_violation.append(timestamp)
@@ -351,6 +358,16 @@ class DatasetPreprocessor:
         player_indx = np.arange(player_dim)
         distance[:, player_indx, player_indx] = 1
         self.edges = distance
+    
+    def _synchronize_annotations(self):
+        # synchronize annotations
+        first_half_ann = self.first_half_ann[:self.first_period_cntr]
+        second_half_ann = self.second_half_ann[:self.second_period_cntr]
+        self.annotations = np.concatenate([first_half_ann, second_half_ann])
+        # genereate annotations for frames that nothing happened
+        none_ann_vector = np.all(self.annotations == 0, axis=1).astype(int)
+        self.annotations = np.concatenate([none_ann_vector.reshape(-1, 1), self.annotations], axis=1)
+        print(f"Annotations shape {self.annotations.shape}")
 
     def _generate_annotaions(self):
         alive = np.array([int(frame.ball_state.value=="alive") for frame in self.dataset.frames])
@@ -358,11 +375,16 @@ class DatasetPreprocessor:
         # self.annotations = np.expand_dims(dead, axis=1)
         self.annotations = np.vstack((alive, dead)).T
 
-    def animate_game(self, edge_threshold:float=None, direction:bool=False, frame_threshold=None, save_dir=None, interval=1):
+    def animate_game(self, edge_threshold:float=None, direction:bool=False, frame_threshold=None, save_dir=None, interval=1, annotation="Shot"):
         try:
             self.matrix
         except AttributeError:
             _ = self._generate_node_features()
+
+        try:
+            self.annotations
+        except AttributeError:
+            self._synchronize_annotations()
 
         if edge_threshold:
             self._generate_edges(threshold=edge_threshold)
@@ -380,7 +402,7 @@ class DatasetPreprocessor:
         ball_coords[:,1] = ball_coords[:,1]*scalars[1]
 
         # create base animation
-        fig, ax = plt.subplots()
+        fig, (ax, ax2) = plt.subplots(2, 1, figsize=(10, 15))
         pitch.draw(ax=ax)
         
         # create an empty collection for edges
@@ -404,12 +426,17 @@ class DatasetPreprocessor:
 
             quiver_home = ax.quiver(coords[0,0,:11], coords[0,1,:11], movement_vectors_home[:,0], movement_vectors_home[:,1], width=0.002)
             quiver_away = ax.quiver(coords[0,0,11:], coords[0,1,11:], movement_vectors_away[:,0], movement_vectors_away[:,1], width=0.002)
-
+        
+        # PLOT ANNOTATIONS
+        ann = ax2.plot(np.arange(0, int(frame_threshold)), self.annotations[:int(frame_threshold),classes_enc[annotation]], label=annotation)
+        ax2.set_title(annotation)
+        ax2.legend()
 
         def init():
             scat_home.set_offsets(np.array([]).reshape(0, 2))
             scat_away.set_offsets(np.array([]).reshape(0, 2))
             scat_ball.set_offsets(np.array([]).reshape(0, 2))
+            ann[0].set_data(np.arange(0, int(frame_threshold)), self.annotations[:int(frame_threshold), classes_enc[annotation]])
             return (scat_home,scat_away,scat_ball)
         
         # get update function
@@ -417,6 +444,7 @@ class DatasetPreprocessor:
             scat_home.set_offsets(coords[frame,:,:11].T)
             scat_away.set_offsets(coords[frame,:,11:].T)
             scat_ball.set_offsets(ball_coords[frame])
+            ann[0].set_data(np.arange(0, int(frame) + 1), self.annotations[:int(frame)+1, classes_enc[annotation]])
             # convert seconds to minutes and seconds
             minutes, seconds = divmod(self.game_details[frame], 60)
             # format the output as mm:ss
@@ -512,3 +540,18 @@ class DatasetPreprocessor:
                 axs[row,col].set_aspect('equal')
                 axs[row,col].set_title(player)
         plt.show()
+
+
+
+# # Your matrix
+# matrix = np.array([[0, 0, 0],
+#                    [1, 0, 0],
+#                    [0, 0, 1]])
+
+# # Specify the row for which you want to create the vector
+# row_index = 1
+
+# # Create the vector based on the specified row
+# vector = np.all(matrix == 0, axis=1).astype(int)
+
+# np.concatenate([vector.reshape(-1, 1), matrix], axis=1)

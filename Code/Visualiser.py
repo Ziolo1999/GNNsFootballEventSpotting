@@ -12,6 +12,7 @@ from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt
 from mplsoccer.pitch import Pitch
 from sklearn.metrics import average_precision_score
+from helpers.classes import EVENT_DICTIONARY_V2_ALIVE as ann_encoder
 
 class VisualiseDataset(Dataset):
     def __init__(self, args):
@@ -45,8 +46,12 @@ class VisualiseDataset(Dataset):
     
     def __getitem__(self,index):
         indx = self.window*index
-        clip_representation = copy.deepcopy(self.representation[indx:indx+self.window+self.receptive_field])
-        clip_annotation = copy.deepcopy(self.annotations[indx:indx+self.window+self.receptive_field])
+        clip_representation = copy.deepcopy(
+            self.representation[indx:indx+self.window+self.receptive_field]
+            )
+        clip_annotation = copy.deepcopy(
+            self.annotations[indx:indx+self.window+self.receptive_field]
+            )
         return clip_representation, clip_annotation
 
     def __len__(self):
@@ -64,10 +69,10 @@ class Visualiser():
         visualise_loader = torch.utils.data.DataLoader(data_visualise,
                             batch_size=args.batch_size, shuffle=False, collate_fn=collate_fn)
         
-        concatenated_seg =  np.zeros((int(data_visualise.receptive_field/2),2))
-        concatenated_spot =  torch.zeros((int(data_visualise.receptive_field/2),4))
+        concatenated_seg =  np.zeros((int(data_visualise.receptive_field/2),args.annotation_nr))
+        concatenated_spot =  torch.zeros((int(data_visualise.receptive_field/2),args.annotation_nr+2))
         # Set the columns to number of the classes
-        annotations = np.zeros((int(data_visualise.receptive_field/2),2))
+        annotations = np.zeros((int(data_visualise.receptive_field/2),args.annotation_nr))
         
         for representation, annotation in visualise_loader:
             segmentation, spotting = model(representation)
@@ -84,12 +89,12 @@ class Visualiser():
             annotations = np.concatenate((annotations, reshaped_ann), axis=0)
 
         if smoothing:
-            smooth_seg  = int(concatenated_seg.shape[0]/args.framerate)
-            smooth_spot  = int(concatenated_spot.shape[0]/args.framerate)
+            smooth_seg = int(concatenated_seg.shape[0]/args.framerate)
+            smooth_spot = int(concatenated_spot.shape[0]/args.framerate)
             smooth_ann = int(annotations.shape[0]/args.framerate)
-            concatenated_seg = concatenated_seg.reshape((smooth_seg, args.framerate, 2)).mean(axis=1)
-            concatenated_spot = concatenated_spot.reshape((smooth_spot, args.framerate, 4)).mean(axis=1)
-            annotations = annotations.reshape((smooth_ann, args.framerate, 2))[:,0,:]
+            concatenated_seg = concatenated_seg.reshape((smooth_seg, args.framerate, args.annotation_nr)).mean(axis=1)
+            concatenated_spot = concatenated_spot.reshape((smooth_spot, args.framerate, args.annotation_nr+2)).mean(axis=1)
+            annotations = annotations.reshape((smooth_ann, args.framerate, args.annotation_nr))[:,0,:]
 
         self.segmentation = concatenated_seg
         self.spotting = concatenated_spot.detach().numpy()
@@ -99,7 +104,7 @@ class Visualiser():
         self.ball_coords = data_visualise.ball_coords[0]
         self.smoothing = smoothing 
 
-    def visualize(self, frame_threshold=None, save_dir=None, interval=1):
+    def visualize(self, frame_threshold=None, save_dir=None, interval=1, annotation="Shot"):
         pitch = Pitch(pitch_color='grass', line_color='white', stripe=True)
 
         # get scalars to represent players position on the map
@@ -131,16 +136,17 @@ class Visualiser():
         smooth_rate = 1
         if self.smoothing:
             smooth_rate = 1/self.args.framerate
-        # seg_alive = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),0], label='Alive')
-        seg_dead = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),1], label='Dead')
-        seg_ann = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),1], label='Annotations')
+
+        ann_indx = ann_encoder[annotation]
+
+        seg_pred = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),ann_indx], label='Predictions')
+        seg_ann = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_indx], label='Annotations')
         ax2.set_title(f"Segmentation")
         ax2.legend()
 
         # Spotting plot
-        # spot_alive = ax3.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),2], label='Alive')
-        spot_dead = ax3.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),3], label='Dead')
-        spot_ann = ax3.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),1], label='Annotations')
+        spot_pred = ax3.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),2+ann_indx], label='Predictions')
+        spot_ann = ax3.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_indx], label='Annotations')
         ax3.set_title(f"Spotting")
         ax3.legend()
 
@@ -148,12 +154,12 @@ class Visualiser():
             scat_home.set_offsets(np.array([]).reshape(0, 2))
             scat_away.set_offsets(np.array([]).reshape(0, 2))
             scat_ball.set_offsets(np.array([]).reshape(0, 2))
-            # seg_alive[0].set_data(np.arange(0, frame_threshold), self.segmentation[:frame_threshold,0])
-            seg_dead[0].set_data(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),1])
-            seg_ann[0].set_data(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),1])
-            # spot_alive[0].set_data(np.arange(0, frame_threshold), self.spotting[:frame_threshold,2])
-            spot_dead[0].set_data(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),3])
-            spot_ann[0].set_data(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),1])
+            
+            seg_pred[0].set_data(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),ann_indx])
+            seg_ann[0].set_data(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_indx])
+            
+            spot_pred[0].set_data(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),2+ann_indx])
+            spot_ann[0].set_data(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_indx])
             return (scat_home,scat_away,scat_ball)
         
         # get update function
@@ -163,19 +169,18 @@ class Visualiser():
             scat_ball.set_offsets(ball_coords[frame])
             
             if (self.smoothing) and (frame % self.args.framerate) == 0:
-                # seg_alive[0].set_data(np.arange(0, frame + 1), self.segmentation[:frame+1, 0])
-                seg_dead[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.segmentation[:int(frame*smooth_rate)+1, 1])
-                seg_ann[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.annotations[:int(frame*smooth_rate)+1, 1])
-                # spot_alive[0].set_data(np.arange(0, frame + 1), self.spotting[:frame+1, 2])
-                spot_dead[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.spotting[:int(frame*smooth_rate)+1, 3])
-                spot_ann[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.annotations[:int(frame*smooth_rate)+1, 1])
+                seg_pred[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.segmentation[:int(frame*smooth_rate)+1, ann_indx])
+                seg_ann[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.annotations[:int(frame*smooth_rate)+1, ann_indx])
+            
+                spot_pred[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.spotting[:int(frame*smooth_rate)+1, 2+ann_indx])
+                spot_ann[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.annotations[:int(frame*smooth_rate)+1, ann_indx])
+            
             elif self.smoothing == False:
-                # seg_alive[0].set_data(np.arange(0, frame + 1), self.segmentation[:frame+1, 0])
-                seg_dead[0].set_data(np.arange(0, frame + 1), self.segmentation[:frame+1, 1])
-                seg_ann[0].set_data(np.arange(0, frame + 1), self.annotations[:frame+1, 1])
-                # spot_alive[0].set_data(np.arange(0, frame + 1), self.spotting[:frame+1, 2])
-                spot_dead[0].set_data(np.arange(0, frame + 1), self.spotting[:frame+1, 3])
-                spot_ann[0].set_data(np.arange(0, frame + 1), self.annotations[:frame+1, 1])
+                seg_pred[0].set_data(np.arange(0, frame + 1), self.segmentation[:frame+1, ann_indx])
+                seg_ann[0].set_data(np.arange(0, frame + 1), self.annotations[:frame+1, ann_indx])
+                
+                spot_pred[0].set_data(np.arange(0, frame + 1), self.spotting[:frame+1, 2+ann_indx])
+                spot_ann[0].set_data(np.arange(0, frame + 1), self.annotations[:frame+1, ann_indx])
             # convert seconds to minutes and seconds
             # minutes, seconds = divmod(self.game_details[frame], 60)
             # format the output as mm:ss
@@ -204,23 +209,25 @@ class Visualiser():
         del coords
         del ball_coords
 
-    def plot_predictions(self, frame_threshold=None, save_dir=None):
+    def plot_predictions(self, frame_threshold=None, save_dir=None, annotation="Shot"):
         # Set the smoothing rate
         smooth_rate = 1
         if self.smoothing:
             smooth_rate = 1/self.args.framerate
         # Create a figure
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 15))
+        
+        ann_indx = ann_encoder[annotation]
+
         # Draw segmentation plots 
-        # seg_alive = ax1.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),0], label='Alive')
-        seg_dead = ax1.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),1], label='Dead')
-        seg_ann = ax1.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),1], label='Annotations')
+        seg_pred = ax1.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),ann_indx], label='Prediction')
+        seg_ann = ax1.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_indx], label='Annotations')
         ax1.set_title(f"Segmentation")
         ax1.legend()
+
         # Draw spotting plots
-        # spot_alive = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),2], label='Alive')
-        spot_dead = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),3], label='Dead')
-        spot_ann = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),1], label='Annotations')
+        spot_pred = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),2+ann_indx], label='Prediction')
+        spot_ann = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_indx], label='Annotations')
         ax2.set_title(f"Spotting")
         ax2.legend()
 

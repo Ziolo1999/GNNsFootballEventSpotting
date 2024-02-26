@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import numpy as np
 
 @dataclass
 class Args:
@@ -46,4 +47,3 @@ class Args:
     GPU=0 
     max_num_worker=1
     loglevel='INFO'
-

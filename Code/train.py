@@ -75,8 +75,8 @@ def trainer(train_loader,
 
 
         # Save the best model based on loss only if the evaluation frequency too long
-        if is_better and evaluation_frequency > max_epochs:
-            torch.save(state, best_model_path)
+        if is_better:
+            torch.save(model, 'models/detector5_1.pth.tar')
 
         # Test the model on the validation set
         # if epoch % evaluation_frequency == 0 and epoch != 0:

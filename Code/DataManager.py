@@ -49,9 +49,9 @@ class CALFData(Dataset):
         logging.info("Preprocessing Data")
         self.listGames = find_files("../football_games")
         if split == "train":
-            DM = DataManager(files=self.listGames[0:1], framerate=args.framerate/25, alive=False)
+            DM = DataManager(files=self.listGames[0:10], framerate=args.framerate/25, alive=False)
         elif split == "validate":
-            DM = DataManager(files=self.listGames[55:56], framerate=args.framerate/25, alive=False)
+            DM = DataManager(files=self.listGames[10:12], framerate=args.framerate/25, alive=False)
         DM.read_games()
 
 
@@ -65,7 +65,7 @@ class CALFData(Dataset):
         if self.args.class_split == "alive":
             self.dict_event = EVENT_DICTIONARY_V2_ALIVE
             self.K_parameters = K_V2_ALIVE*args.framerate 
-            self.num_classes = 2
+            self.num_classes = args.annotation_nr
         
         self.num_detections = args.num_detections
         self.split=split
@@ -125,6 +125,7 @@ class CALFData(Dataset):
         event_selection = random.randint(0, len(self.game_anchors[class_selection])-1)
         game_index = self.game_anchors[class_selection][event_selection][0]
         anchor = self.game_anchors[class_selection][event_selection][1]
+
         # Prevents size mismatch when events from the end of the game are selected
         while (anchor < self.chunk_size) or (anchor > self.game_size[game_index]-self.chunk_size):
             event_selection = random.randint(0, len(self.game_anchors[class_selection])-1)
@@ -202,10 +203,12 @@ class DataManager():
             if len(player_violation)>0:
                 logging.warning(f"Match {f.name} does not have 11 players in the {len(player_violation)} frames.")
             dataset._generate_edges(threshold=0.2)
+            dataset._synchronize_annotations()
             self.datasets.append(dataset.matrix)
             self.edges.append(dataset.edges)
             self.matches.append(f.name)
             self.annotations.append(dataset.annotations)
+            
             if ball_coords:
                 self.ball_coords.append(dataset.ball_coords)
             del dataset
