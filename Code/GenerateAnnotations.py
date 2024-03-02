@@ -31,7 +31,7 @@ def main():
     #     'Dribble', 'Miscontrol', 'Block', 'Dribbled Past', 'Clearance',
     #     'Goal Keeper', 'Dispossessed','Shot']
 
-    selected_classes = ['Pressure','Foul Won', 'Foul Committed', 'Interception',
+    selected_classes = ['Foul Won', 'Foul Committed', 'Interception',
         'Ball Recovery', 'Duel', 'Substitution',
         'Dribble', 'Miscontrol', 'Block', 'Dribbled Past', 'Clearance',
         'Goal Keeper', 'Dispossessed','Shot']

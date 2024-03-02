@@ -21,7 +21,8 @@ def trainer(train_loader,
             weights,
             model_name,
             max_epochs=1000,
-            evaluation_frequency=20):
+            evaluation_frequency=20,
+            save_dir="models/detector.pth.tar"):
 
     logging.info("start training")
 
@@ -76,7 +77,7 @@ def trainer(train_loader,
 
         # Save the best model based on loss only if the evaluation frequency too long
         if is_better:
-            torch.save(model, 'models/detector5_1.pth.tar')
+            torch.save(model, save_dir)
 
         # Test the model on the validation set
         # if epoch % evaluation_frequency == 0 and epoch != 0:
@@ -343,3 +344,5 @@ def train(dataloader,
 #     print("Average mAP unshown per class: ", a_mAP_per_class_unshown)
 
 #     return a_mAP, a_mAP_per_class, a_mAP_visible, a_mAP_per_class_visible, a_mAP_unshown, a_mAP_per_class_unshown
+
+

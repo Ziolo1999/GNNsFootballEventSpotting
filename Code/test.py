@@ -1,6 +1,6 @@
 from DataManager import CALFData, DataManager, collateGCN
 from FileFinder import MatchFile, find_files
-from DataPreprocessing import DatasetPreprocessor
+from Code2.DataPreprocessing import DatasetPreprocessor
 import numpy as np
 from helpers.classes import EVENT_DICTIONARY_V2_ALIVE, K_V2_ALIVE
 from helpers.preprocessing import oneHotToShifts, getTimestampTargets, getChunks_anchors, unproject_image_point, meter2radar
@@ -226,3 +226,33 @@ for i in np.arange(18):
 
 for anchor in anchors:
     game_anchors[anchor[2]].append(anchor)
+
+
+
+
+def average_segmentation(segmentation_results, window):
+    x_axis = segmentation_results.shape[0] 
+    y_axis = segmentation_results[0] * window + segmentation_results[1] 
+    z_axis = segmentation_results[2]
+    exceeded_segmentation = np.empty((x_axis, y_axis, z_axis))
+    
+    for index, batch in enumerate(segmentation_results):
+        exceeded_segmentation[index, index*window:index*window+segmentation_results[1], :] = batch
+    avg_segmentation = np.average(exceeded_segmentation, axis=0)
+    return avg_segmentation    
+
+batches = np.random.random((32,300,10))
+modelled_size = np.empty((32,31*50+300, 10))
+for index, batch in enumerate(batches):
+    modelled_size[index, index*50:index*50+300, :] = batch
+weights = np.where(modelled_size != 0, 1, 0)
+
+modelled_size.shape
+np.average(modelled_size[:,2,0], weights=np.where(modelled_size[:,2,0] != 0, 1, 0))
+avg = np.mean(modelled_size, axis=0, where=(modelled_size != 0))
+avg[2,0]
+
+batches = np.random.random((32,300,10))
+zero_batch = np.empty((0,300,10))
+zero_batch = np.concatenate((zero_batch, batches), axis=0)
+zero_batch.shape

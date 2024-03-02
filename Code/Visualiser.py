@@ -14,19 +14,42 @@ from mplsoccer.pitch import Pitch
 from sklearn.metrics import average_precision_score
 from helpers.classes import EVENT_DICTIONARY_V2_ALIVE as ann_encoder
 
+def collateVisGCN(list_of_examples):
+    return Batch.from_data_list([x for b in list_of_examples for x in b[0]]),\
+            np.stack([x[1] for x in list_of_examples], axis=0)
+
+def average_segmentation(segmentation_results, window):
+    x_axis = int(segmentation_results.shape[0])
+    y_axis = ((segmentation_results.shape[0]-1) * window + segmentation_results.shape[1]) 
+    z_axis = (segmentation_results.shape[2])
+    exceeded_segmentation = np.empty((x_axis, y_axis, z_axis))
+    
+    for index, batch in enumerate(segmentation_results):
+        exceeded_segmentation[index, index*window:index*window+segmentation_results.shape[1], :] = batch
+    
+    avg_segmentation = np.mean(exceeded_segmentation, axis=0, where=(exceeded_segmentation != 0))
+    # avg_segmentation =  np.nan_to_num(avg_segmentation)
+    return avg_segmentation    
+
 class VisualiseDataset(Dataset):
-    def __init__(self, args):
+    def __init__(self, args, val=True):
         
         listGames = find_files("../football_games")
         self.args = args
-
-        DM = DataManager(files=listGames[0:1], framerate=args.framerate/25, alive=False)
+        if val:
+            DM = DataManager(files=listGames[11:12], framerate=args.framerate/25, alive=False)
+        else:
+            DM = DataManager(files=listGames[0:1], framerate=args.framerate/25, alive=False)
         DM.read_games(ball_coords=True)
         DM.datasets[0].shape
         
         self.receptive_field = args.receptive_field*args.framerate
         self.window = args.chunk_size*args.framerate - self.receptive_field
-        self.windows_count = np.floor(DM.datasets[0].shape[0]/self.window)-1
+        self.num_detections = args.num_detections
+        self.chunk =  args.chunk_size * args.framerate
+        self.chunk_counts = np.floor(DM.datasets[0].shape[0]/self.window)-1
+        
+        # self.full_receptive_field = self.chunk - self.window
 
         self.representation = []
         self.matrix = DM.datasets[0]
@@ -45,35 +68,33 @@ class VisualiseDataset(Dataset):
             self.representation.append(data)
     
     def __getitem__(self,index):
-        indx = self.window*index
+        indx = self.window * index
         clip_representation = copy.deepcopy(
-            self.representation[indx:indx+self.window+self.receptive_field]
+            self.representation[indx:indx+self.chunk]
             )
         clip_annotation = copy.deepcopy(
-            self.annotations[indx:indx+self.window+self.receptive_field]
+            self.annotations[indx:indx+self.chunk]
             )
         return clip_representation, clip_annotation
 
     def __len__(self):
-        return int(self.windows_count)
-
-def collateVisGCN(list_of_examples):
-    return Batch.from_data_list([x for b in list_of_examples for x in b[0]]),\
-            np.stack([x[1] for x in list_of_examples], axis=0)
+        return int(self.chunk_counts)
 
 class Visualiser():
-    def __init__(self, collate_fn, args, model, smoothing=False):   
+    def __init__(self, collate_fn, args, model, smoothing=False, val=True):   
+        
         collate_fn = collate_fn
-        data_visualise = VisualiseDataset(args=args)
+        data_visualise = VisualiseDataset(args=args, val=val)
         
         visualise_loader = torch.utils.data.DataLoader(data_visualise,
                             batch_size=args.batch_size, shuffle=False, collate_fn=collate_fn)
         
-        concatenated_seg =  np.zeros((int(data_visualise.receptive_field/2),args.annotation_nr))
-        concatenated_spot =  torch.zeros((int(data_visualise.receptive_field/2),args.annotation_nr+2))
-        # Set the columns to number of the classes
+        # concatenated_seg = np.empty((0, data_visualise.chunk, args.annotation_nr))
+        concatenated_seg = np.ones((int(data_visualise.receptive_field/2),args.annotation_nr))
+        concatenated_spot = torch.zeros((int(data_visualise.receptive_field/2),args.annotation_nr+2))
         annotations = np.zeros((int(data_visualise.receptive_field/2),args.annotation_nr))
         
+        repeat_factor = data_visualise.chunk / data_visualise.num_detections
         for representation, annotation in visualise_loader:
             segmentation, spotting = model(representation)
             
@@ -81,23 +102,30 @@ class Visualiser():
             reshaped_seg = np.reshape(segmentation, (segmentation.shape[0]*segmentation.shape[1], segmentation.shape[2]))
             concatenated_seg = np.concatenate((concatenated_seg, reshaped_seg), axis=0)
             
-            reshaped_spot = torch.reshape(spotting, (spotting.shape[0]*spotting.shape[1], spotting.shape[2]))
-            concatenated_spot = torch.cat((concatenated_spot, reshaped_spot), dim=0)
+            # segmentation = segmentation.detach().numpy()
+            # concatenated_seg = np.concatenate((concatenated_seg, segmentation), axis=0)
+            repeated_spot = np.repeat(spotting.detach().numpy(), repeat_factor, axis=1)
+            spotting = np.array([x[int(data_visualise.receptive_field/2):-int(data_visualise.receptive_field/2)] for x in repeated_spot])
+            reshaped_spot = np.reshape(spotting, (spotting.shape[0]*spotting.shape[1], spotting.shape[2]))
+            concatenated_spot = np.concatenate((concatenated_spot, reshaped_spot), axis=0)
             
             annotation = np.array([x[int(data_visualise.receptive_field/2):-int(data_visualise.receptive_field/2)] for x in annotation])
             reshaped_ann = np.reshape(annotation, (annotation.shape[0]*annotation.shape[1], annotation.shape[2]))
             annotations = np.concatenate((annotations, reshaped_ann), axis=0)
 
+        # concatenated_seg = average_segmentation(concatenated_seg, data_visualise.window)
+
         if smoothing:
-            smooth_seg = int(concatenated_seg.shape[0]/args.framerate)
-            smooth_spot = int(concatenated_spot.shape[0]/args.framerate)
-            smooth_ann = int(annotations.shape[0]/args.framerate)
-            concatenated_seg = concatenated_seg.reshape((smooth_seg, args.framerate, args.annotation_nr)).mean(axis=1)
-            concatenated_spot = concatenated_spot.reshape((smooth_spot, args.framerate, args.annotation_nr+2)).mean(axis=1)
-            annotations = annotations.reshape((smooth_ann, args.framerate, args.annotation_nr))[:,0,:]
+            smooth_seg = int(np.floor(concatenated_seg.shape[0]/args.framerate))
+            smooth_spot = int(np.floor(concatenated_spot.shape[0]/args.framerate))
+            smooth_ann = int(np.floor(annotations.shape[0]/args.framerate))
+            
+            concatenated_seg = concatenated_seg[:smooth_seg*args.framerate].reshape((smooth_seg, args.framerate, args.annotation_nr)).mean(axis=1)
+            concatenated_spot = concatenated_spot[:smooth_spot*args.framerate].reshape((smooth_spot, args.framerate, args.annotation_nr+2)).mean(axis=1)
+            annotations = annotations[:smooth_ann*args.framerate].reshape((smooth_ann, args.framerate, args.annotation_nr))[:,0,:]
 
         self.segmentation = concatenated_seg
-        self.spotting = concatenated_spot.detach().numpy()
+        self.spotting = concatenated_spot
         self.annotations = annotations
         self.args = args
         self.matrix = data_visualise.matrix
@@ -242,4 +270,15 @@ class Visualiser():
             predictions = predictions[:self.annotations.shape[0],:]
         mAP = average_precision_score(self.annotations, predictions, average='macro')
         return mAP
-    
+
+# mat_org = np.random.random((32,15,16))
+# mat = np.repeat(mat_org, 2, axis=1)
+# mat = mat.reshape((-1,16))
+
+# mat2 = mat_org.reshape((-1,16))
+# mat2 = np.repeat(mat2, 2, axis=0)
+
+
+
+# mat[:4]
+# mat2[:4]

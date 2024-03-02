@@ -365,9 +365,9 @@ class DatasetPreprocessor:
         second_half_ann = self.second_half_ann[:self.second_period_cntr]
         self.annotations = np.concatenate([first_half_ann, second_half_ann])
         # genereate annotations for frames that nothing happened
-        none_ann_vector = np.all(self.annotations == 0, axis=1).astype(int)
-        self.annotations = np.concatenate([none_ann_vector.reshape(-1, 1), self.annotations], axis=1)
-        print(f"Annotations shape {self.annotations.shape}")
+        # none_ann_vector = np.all(self.annotations == 0, axis=1).astype(int)
+        # self.annotations = np.concatenate([none_ann_vector.reshape(-1, 1), self.annotations], axis=1)
+
 
     def _generate_annotaions(self):
         alive = np.array([int(frame.ball_state.value=="alive") for frame in self.dataset.frames])

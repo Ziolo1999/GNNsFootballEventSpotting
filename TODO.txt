@@ -1,3 +1,14 @@
+PLAN:
+-> Prepare better annotations prepare some plots that will demonstrate some distributions. Focus on for example counter pressing.
+-> Erase the receptive field from the data.
+-> Change data loader so it will provide also negative sampling 
+-> Prepare the model so that it will learn only segmentation module.
+-> Design the architecture that will capture temporal patterns from segmentation module to predict the event. Think about applying recurrent neural net. 
+
+
+
+
+
 -> Check the loss values on the original data,
 -> Optimise data reader too much RAM,
 -> Verify the evaluation part takes more GPU RAM then training part?
@@ -13,4 +24,14 @@ Things to cover:
 -> Experiment on the model 
 
 -> Explain which annotations use and start thinking about the parameters based on the game u received
+
+
+Further steps:
+-> Generate better annotations
+-> Verify synchronisation
+-> Increase smoothing
+-> Probability of choosing annotations as we have uneven distribution of them
+-> Play more with K parameters
+-> 1 seconds of prediction corresponds to the the 300/15
+
 
