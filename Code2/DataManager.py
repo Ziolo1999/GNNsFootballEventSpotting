@@ -52,7 +52,7 @@ class CALFData(Dataset):
             DM = DataManager(files=self.listGames[0:10], framerate=args.framerate/25, alive=False)
         elif split == "validate":
             DM = DataManager(files=self.listGames[10:12], framerate=args.framerate/25, alive=False)
-        DM.read_games()
+        DM.read_games(focused_annotation=args.focused_annotation)
 
 
         # self.features = args.features
@@ -64,7 +64,7 @@ class CALFData(Dataset):
 
         if self.args.class_split == "alive":
             self.dict_event = EVENT_DICTIONARY_V2_ALIVE
-            self.K_parameters = K_V2_ALIVE*args.framerate 
+            self.K_parameters = args.K_parameters*args.framerate 
             self.num_classes = args.annotation_nr
         
         self.num_detections = args.num_detections
@@ -92,12 +92,21 @@ class CALFData(Dataset):
             for frame in range(DM.datasets[game_indx].shape[0]):
                 # Get nodes features
                 Features = DM.datasets[game_indx][frame].T
+                x = torch.tensor(Features, dtype=torch.float)
+
                 # Get edges indicses
                 rows, cols = np.nonzero(DM.edges[game_indx][frame])
                 Edges = np.stack((rows, cols))
                 edge_index = torch.tensor(Edges, dtype=torch.long)
-                x = torch.tensor(Features, dtype=torch.float)
-                data = Data(x=x, edge_index=edge_index)
+                
+                # Get edge weights
+                edge_attr = torch.tensor(
+                    [DM.edges[game_indx][frame][x,y] for x,y in zip(rows,cols)], 
+                    dtype=torch.float
+                    )
+                
+                # Generate Data 
+                data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
                 representation.append(data)
 
             self.game_representation.append(representation)
@@ -133,7 +142,8 @@ class CALFData(Dataset):
             anchor = self.game_anchors[class_selection][event_selection][1]
 
         # Compute the shift for event chunks
-        shift = np.random.randint(-self.chunk_size+self.receptive_field, -self.receptive_field)
+        # shift = np.random.randint(-self.chunk_size+self.receptive_field, -self.receptive_field)
+        shift = np.random.randint(-self.chunk_size, 0)
         start = anchor + shift
         # Extract the clips
         clip_labels = copy.deepcopy(self.game_labels[game_index][start:start+self.chunk_size])
@@ -189,7 +199,7 @@ class DataManager():
         assert len(self.home) == len(self.files)
         assert len(self.home) == len(self.away)
 
-    def read_games(self, ball_coords:bool=False):
+    def read_games(self, ball_coords:bool=False, focused_annotation=None):
         """ Reads all games and provides list features and edges matrices 
         """
         if ball_coords:
@@ -203,7 +213,7 @@ class DataManager():
             if len(player_violation)>0:
                 logging.warning(f"Match {f.name} does not have 11 players in the {len(player_violation)} frames.")
             dataset._generate_edges(threshold=0.2)
-            dataset._synchronize_annotations()
+            dataset._synchronize_annotations(focused_annotation=focused_annotation)
             self.datasets.append(dataset.matrix)
             self.edges.append(dataset.edges)
             self.matches.append(f.name)

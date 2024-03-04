@@ -37,18 +37,21 @@ class VisualiseDataset(Dataset):
         
         listGames = find_files("../football_games")
         self.args = args
+
         if val:
             DM = DataManager(files=listGames[11:12], framerate=args.framerate/25, alive=False)
         else:
             DM = DataManager(files=listGames[0:1], framerate=args.framerate/25, alive=False)
+        
         DM.read_games(ball_coords=True)
         DM.datasets[0].shape
         
-        self.receptive_field = args.receptive_field*args.framerate
-        self.window = args.chunk_size*args.framerate - self.receptive_field
-        self.num_detections = args.num_detections
-        self.chunk =  args.chunk_size * args.framerate
-        self.chunk_counts = np.floor(DM.datasets[0].shape[0]/self.window)-1
+        self.receptive_field = int(args.receptive_field*args.framerate)
+        self.window = int(args.chunk_size*args.framerate - self.receptive_field)
+        self.num_detections = int(args.num_detections)
+        self.chunk =  int(args.chunk_size * args.framerate)
+        self.chunk_counts = int(np.floor(
+            (DM.datasets[0].shape[0]-self.chunk)/self.window))
         
         # self.full_receptive_field = self.chunk - self.window
 
@@ -69,7 +72,7 @@ class VisualiseDataset(Dataset):
             self.representation.append(data)
     
     def __getitem__(self,index):
-        indx = self.window * index
+        indx = int(self.window * index)
         clip_representation = copy.deepcopy(
             self.representation[indx:indx+self.chunk]
             )
@@ -82,7 +85,7 @@ class VisualiseDataset(Dataset):
         return int(self.chunk_counts)
 
 class Visualiser():
-    def __init__(self, collate_fn, args, model, smooth_rate=None, val=True):   
+    def __init__(self, collate_fn, args, model, smooth_rate=None, val=True, ann=None):   
         
         collate_fn = collate_fn
         data_visualise = VisualiseDataset(args=args, val=val)
@@ -91,9 +94,13 @@ class Visualiser():
                             batch_size=args.batch_size, shuffle=False, collate_fn=collate_fn)
         
         # concatenated_seg = np.empty((0, data_visualise.chunk, args.annotation_nr))
-        concatenated_seg = np.ones((int(data_visualise.receptive_field/2),args.annotation_nr))
+        if ann:
+            concatenated_seg = np.ones((int(data_visualise.receptive_field/2), 1))
+            annotations = np.zeros((int(data_visualise.receptive_field/2),len(ann_encoder)))
+        else:
+            concatenated_seg = np.ones((int(data_visualise.receptive_field/2),args.annotation_nr))
+            annotations = np.zeros((int(data_visualise.receptive_field/2),args.annotation_nr))
         # concatenated_spot = torch.zeros((int(data_visualise.receptive_field/2),args.annotation_nr+2))
-        annotations = np.zeros((int(data_visualise.receptive_field/2),args.annotation_nr))
         
         # repeat_factor = data_visualise.chunk / data_visualise.num_detections
         for representation, annotation in visualise_loader:
@@ -260,7 +267,7 @@ class Visualiser():
             fig, ax = plt.subplots(1, 1, figsize=(10, 10))
             ann_index = ann_encoder[annotation]
             seg_ann = ax.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_index], label='Annotations')
-            seg_pred = ax.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),ann_index], label='Prediction')
+            seg_pred = ax.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),0], label='Prediction')
             ax.set_title(f"Segmentation {ann_index}")
             ax.legend()
 

@@ -15,7 +15,7 @@ from helpers.classes import EVENT_DICTIONARY_V2_ALIVE as classes_enc
 
 class DatasetPreprocessor:
     """ Data class used for preprocessing of the positional data and generation of the annotations"""
-    def __init__(self, sample_rate: float, name, alive: bool = False) -> None:
+    def __init__(self, sample_rate: float, name, alive: bool = False):
         
         self.alive = alive
         self.dataset = None
@@ -337,6 +337,7 @@ class DatasetPreprocessor:
             _ = self._generate_node_features()
 
         frame_dim, _, player_dim = self.matrix.shape
+        
         # calculate distances at x-axis between each player for each frame 
         x_coords = self.matrix[:,0,:]
         x_coords = x_coords.reshape(frame_dim,1,player_dim)
@@ -352,18 +353,24 @@ class DatasetPreprocessor:
         distance = np.sqrt(difference)
 
         # determine connections
-        distance = np.where(distance < threshold, 1, 0)
+        # distance = np.where(distance < threshold, 1, 0)
+        distance = np.where(distance < threshold, distance, 0)
+        distance = 1-distance
 
         # fill diagonal for each frame with ones
         player_indx = np.arange(player_dim)
         distance[:, player_indx, player_indx] = 1
         self.edges = distance
     
-    def _synchronize_annotations(self):
+    def _synchronize_annotations(self, focused_annotation):
         # synchronize annotations
         first_half_ann = self.first_half_ann[:self.first_period_cntr]
         second_half_ann = self.second_half_ann[:self.second_period_cntr]
         self.annotations = np.concatenate([first_half_ann, second_half_ann])
+        
+        if focused_annotation is not None:
+            selected_annotations = self.annotations[:, classes_enc[focused_annotation]]
+            self.annotations = np.expand_dims(selected_annotations, axis=1)
         # genereate annotations for frames that nothing happened
         # none_ann_vector = np.all(self.annotations == 0, axis=1).astype(int)
         # self.annotations = np.concatenate([none_ann_vector.reshape(-1, 1), self.annotations], axis=1)
