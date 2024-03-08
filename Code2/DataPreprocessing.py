@@ -1,14 +1,10 @@
 import numpy as np
-import pandas as pd
-import xml.etree.ElementTree as ET
-from kloppy import TRACABSerializer, to_pandas
-from kloppy.domain.models.common import Point, Player, Team
-from kloppy.domain.models.tracking import PlayerData, TrackingDataset, Frame
+from kloppy.domain.models.tracking import TrackingDataset
+from kloppy import TRACABSerializer
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.animation as animation
 from mplsoccer.pitch import Pitch
-import logging
 import seaborn as sns
 from matplotlib.collections import LineCollection
 from helpers.classes import EVENT_DICTIONARY_V2_ALIVE as classes_enc
@@ -39,8 +35,7 @@ class DatasetPreprocessor:
         self.red_card_games = ['BEL-GRE','BEL-RUS', 'AUS-BEL']
         self.missing_players_games = ['NED-BEL', 'ICE-BEL']
 
-
-    def open_dataset(self, datafilepath: str, metafilepath: str, annotatedfilepath: str) -> TrackingDataset:
+    def _open_dataset(self, datafilepath: str, metafilepath: str, annotatedfilepath: str) -> TrackingDataset:
         """Parse file using kloppy lib and create unique player df
 
         Args:
@@ -108,7 +103,6 @@ class DatasetPreprocessor:
             old_players = current_players  
         self.switch_frames = frames
         return frames
-
     
     def generate_encodings(self):
         self.player_encoder = {}
@@ -130,7 +124,7 @@ class DatasetPreprocessor:
             if len(self.player_encoder.keys())==22:
                 break
     
-    def _get_player_presence(self):
+    def get_player_presence(self):
         # get starting players and note their occurence
         starting_players = list(map(lambda x: x.player_id, self.dataset.frames[0].players_coordinates.keys()))
         starting_frame = [[0] for x in range(len(starting_players))]
@@ -149,8 +143,7 @@ class DatasetPreprocessor:
                 val.append(len(self.dataset.frames)-1)
         return frame_borders
 
-
-    def _get_player_coordinates(self, frame):  
+    def get_player_coordinates(self, frame):  
         coord_matrix = np.zeros((22,2))
         ball_coord = np.array([frame.ball_coordinates.x, frame.ball_coordinates.y])
         ball_dist = np.zeros((22,1))
@@ -182,7 +175,7 @@ class DatasetPreprocessor:
             player_speed[self.player_encoder[player.player_id]] = playerdata.speed
         return np.hstack((coord_matrix,ball_dist,player_speed))
     
-    def _get_ball_coordinates(self, frame):
+    def get_ball_coordinates(self, frame):
         if (self.belgium_field_part == "left") & (frame.period.id == 1):
             ball_coord = [frame.ball_coordinates.x, frame.ball_coordinates.y]
             
@@ -196,7 +189,7 @@ class DatasetPreprocessor:
             ball_coord = [frame.ball_coordinates.x, frame.ball_coordinates.y]
         return ball_coord
     
-    def _get_game_details(self,frame):
+    def get_game_details(self,frame):
         if frame.period.id == 1:
             self.first_period_cntr += 1
             return frame.timestamp
@@ -204,7 +197,7 @@ class DatasetPreprocessor:
             self.second_period_cntr += 1
             return frame.timestamp+2700
         
-    def _player_violation(self):
+    def player_violation(self):
         player_violation = []
         for frame in self.dataset.frames:
             if frame.period.id == 1:
@@ -216,14 +209,14 @@ class DatasetPreprocessor:
                 player_violation.append(timestamp)
         return player_violation
     
-    def _generate_node_features(self):
+    def _generate_node_features(self, x_mirror=False, y_mirror=False):
         ''' Generates the nodes' features for each frame. The final result is obtained in the self.matrix.
             It is the 3d matrix which can be desribed as follows:
             - 1st axis: Frames
             - 2nd axis: Features
             - 3rd axis: Players
             The order of features is as follows: 
-            x-position, y-position, distance to the ball, speed, x-direction, y-direction, movement direction (in radians), order of average position, team affiliation, red card flag.
+            x-position, y-position, distance to the ball, speed, x-direction, y-direction, movement direction (in radians), order of average position, team affiliation, red card flag, acceleration, avg velocity, avg acceleration.
             There is also order of players in the matrix. First eleven are the Belgian players, the last 11 are the opponents players.
         '''
         try:
@@ -261,16 +254,23 @@ class DatasetPreprocessor:
                     self.player_encoder[swap[1]] = self.player_encoder[swap[0]]
             
             # generates coordinates
-            frame_features = self._get_player_coordinates(frame)
+            frame_features = self.get_player_coordinates(frame)
             self.matrix.append(frame_features)
             # get ball position
-            self.ball_coords.append(self._get_ball_coordinates(frame))
+            self.ball_coords.append(self.get_ball_coordinates(frame))
             # get timestamp 
-            self.game_details.append(self._get_game_details(frame))
-
+            self.game_details.append(self.get_game_details(frame))
+        
         self.matrix = np.array(self.matrix)
         self.ball_coords = np.array(self.ball_coords)
         self.game_details = np.array(self.game_details)
+
+        # required to get augmented data by mirroring actions
+        if x_mirror:
+            self.matrix[:,:,0] = 1-self.matrix[:,:,0] 
+
+        if y_mirror:
+            self.matrix[:,:,1] = 1-self.matrix[:,:,1]
 
         # get direction vector for x-coords
         self.matrix = np.transpose(self.matrix, axes=[0, 2, 1])
@@ -297,7 +297,26 @@ class DatasetPreprocessor:
         # get team affiliation
         team_affiliation = np.concatenate((np.zeros((self.matrix.shape[0],11)),np.ones((self.matrix.shape[0],11))), axis=1)
         team_affiliation = np.expand_dims(team_affiliation, axis=1)
-        
+
+        # calculate accelaration
+        rolled_velocity = np.roll(self.matrix[:,3,:], shift=1, axis=0)
+        delta_v = self.matrix[:,3,:] - rolled_velocity
+        acceleration = delta_v * self.fps
+        acceleration[0,:] = 0
+        acceleration = np.expand_dims(acceleration, axis=1)
+
+        # # calculate average velocity
+        mean_velocity = self.matrix[:,3,:].mean(axis=0)
+        expanded_mean_velocity = np.expand_dims(mean_velocity, axis=0)
+        repeated_mean_velocity = np.repeat(expanded_mean_velocity, self.matrix[:,3,:].shape[0], axis=0)
+        repeated_mean_velocity = np.expand_dims(repeated_mean_velocity, axis=1)
+
+        # # calculate average acceleration 
+        mean_acceleration = acceleration[:,0,:].mean(axis=0)
+        expanded_mean_acceleration = np.expand_dims(mean_acceleration,axis=0)
+        repeated_mean_acceleration = np.repeat(expanded_mean_acceleration, acceleration.shape[0], axis=0)
+        repeated_mean_acceleration = np.expand_dims(repeated_mean_acceleration, axis=1)
+
         # add red card flag
         red_flag = np.zeros((self.matrix.shape[0], 1, self.matrix.shape[2]))
         if self.name in self.red_card_games:
@@ -313,8 +332,9 @@ class DatasetPreprocessor:
                         red_card_frames.append(key)
             for red_frame, red_player in zip(red_card_frames, red_card_players):
                 red_flag[red_frame:, :, self.player_encoder[red_player]] = 1
+        
         # concatenate new variables
-        self.matrix = np.concatenate((self.matrix, x_directions, y_directions, movement_direction, avg_position_total, team_affiliation, red_flag), axis=1)
+        self.matrix = np.concatenate((self.matrix, x_directions, y_directions, movement_direction, avg_position_total, team_affiliation, red_flag, acceleration, repeated_mean_velocity, repeated_mean_acceleration), axis=1)
         
         # mising player cases discovered at data preprocessing part
         if self.name in self.missing_players_games:
@@ -327,7 +347,7 @@ class DatasetPreprocessor:
 
         return player_violation
 
-    def _generate_edges(self, threshold:float=0.2):
+    def _generate_edges(self, threshold:float=None):
         """
         Generates adjacency matrix
         """
@@ -354,20 +374,45 @@ class DatasetPreprocessor:
 
         # determine connections
         # distance = np.where(distance < threshold, 1, 0)
-        distance = np.where(distance < threshold, distance, 0)
+        
+        if threshold:
+            distance = np.where(distance < threshold, distance, 1)
+        
         distance = 1-distance
-
         # fill diagonal for each frame with ones
-        player_indx = np.arange(player_dim)
-        distance[:, player_indx, player_indx] = 1
+        # player_indx = np.arange(player_dim)
+        # distance[:, player_indx, player_indx] = 1
         self.edges = distance
+
+        # get velocity differences
+        velocity = self.matrix[:,3,:]
+        velocity = velocity.reshape(frame_dim,1,player_dim)
+        self.velocity_diff = velocity - np.transpose(velocity,(0,2,1))
+
+        # get the acceleration differences
+        acceleration = self.matrix[:,10,:]
+        acceleration = acceleration.reshape(frame_dim,1,player_dim)
+        self.acceleration_diff = acceleration  - np.transpose(acceleration,(0,2,1))
+
+        # get the direction differences
+        direction = self.matrix[:,6,:]
+        direction = direction.reshape(frame_dim, 1, player_dim)
+        self.direction_diff = direction - np.transpose(direction,(0,2,1))
     
-    def _synchronize_annotations(self, focused_annotation):
+    def _synchronize_annotations(self, focused_annotation=None):
+        
         # synchronize annotations
         first_half_ann = self.first_half_ann[:self.first_period_cntr]
         second_half_ann = self.second_half_ann[:self.second_period_cntr]
         self.annotations = np.concatenate([first_half_ann, second_half_ann])
         
+        # create dead annotation
+        dead = np.array(
+            [int(frame.ball_state.value != "alive") for frame in self.dataset.frames]
+            )
+        dead = np.expand_dims(dead, axis=1)
+        self.annotations = np.concatenate([self.annotations, dead], axis=1)
+
         if focused_annotation is not None:
             selected_annotations = self.annotations[:, classes_enc[focused_annotation]]
             self.annotations = np.expand_dims(selected_annotations, axis=1)
@@ -375,8 +420,7 @@ class DatasetPreprocessor:
         # none_ann_vector = np.all(self.annotations == 0, axis=1).astype(int)
         # self.annotations = np.concatenate([none_ann_vector.reshape(-1, 1), self.annotations], axis=1)
 
-
-    def _generate_annotaions(self):
+    def _generate_annotations(self):
         alive = np.array([int(frame.ball_state.value=="alive") for frame in self.dataset.frames])
         dead = np.ones(alive.shape) - alive
         # self.annotations = np.expand_dims(dead, axis=1)
@@ -461,7 +505,7 @@ class DatasetPreprocessor:
             # include edges in the animation
             if edge_threshold:
                 segments = []
-                row_indices, col_indices = np.where(self.edges[frame] == 1)
+                row_indices, col_indices = np.where(self.edges[frame] != 0)
                 for i, j in zip(row_indices, col_indices):
                     segments.append([(coords[frame, 0, i], coords[frame, 1, i]),
                                     (coords[frame, 0, j], coords[frame, 1, j])])
@@ -504,7 +548,6 @@ class DatasetPreprocessor:
         del coords
         del ball_coords
 
-
     def generate_heatmaps(self):
         try:
             self.matrix
@@ -516,7 +559,7 @@ class DatasetPreprocessor:
         # get scalars to represent players position on the map
         scalars = (pitch.dim.pitch_length, pitch.dim.pitch_width)
         # get dictionary discribing during which frame the player occured
-        frame_borders = self._get_player_presence()
+        frame_borders = self.get_player_presence()
 
         # Determine Belgium and opponent players
         if self.belgium_role == "home":
@@ -534,31 +577,37 @@ class DatasetPreprocessor:
 
         fig, axs = pitch.draw(nrows=nrows, ncols=4, figsize=(8, 6))
         player_cntr = 0
-        for row in range(nrows):
-            for col in range(4):
-                player = belgium_players[player_cntr]
-                player_cntr += 1
-                player_frame_borders = frame_borders[player]
-                player_id = self.player_encoder[player]
-                x = self.matrix[player_frame_borders[0]:player_frame_borders[1],0,player_id]*scalars[0]
-                y = self.matrix[player_frame_borders[0]:player_frame_borders[1],1,player_id]*scalars[1]
+        flattened_axes = axs.flatten()
+        for ax in flattened_axes:
+            player = belgium_players[player_cntr]
+            player_cntr += 1
+            player_frame_borders = frame_borders[player]
+            player_id = self.player_encoder[player]
+            x = self.matrix[player_frame_borders[0]:player_frame_borders[1],0,player_id]*scalars[0]
+            y = self.matrix[player_frame_borders[0]:player_frame_borders[1],1,player_id]*scalars[1]
 
-                sns.kdeplot(x=x, y=y, fill=True, cmap="coolwarm", n_levels=50, ax=axs[row,col], zorder=0)
-                axs[row,col].set_aspect('equal')
-                axs[row,col].set_title(player)
+            sns.kdeplot(x=x, y=y, fill=True, cmap="coolwarm", n_levels=50, ax=ax, zorder=0)
+            ax.set_aspect('equal')
+            ax.set_title(player)
+            
+            # checks if all players were delivered
+            print(player_cntr, belgium_cnt-1)
+            if player_cntr == belgium_cnt-1:
+                print("Into condition")
+                for ax in flattened_axes[player_cntr+2:]:
+                    ax.axis('off')
+                print("Before break")
+                break
         plt.show()
 
+# from FileFinder import find_files
 
+# files = find_files("../football_games")
 
-# # Your matrix
-# matrix = np.array([[0, 0, 0],
-#                    [1, 0, 0],
-#                    [0, 0, 1]])
+# dataset = DatasetPreprocessor(1/5, files[1].name)
+# dataset._open_dataset(files[1].datafile, files[1].metafile, files[1].annotatedfile)
 
-# # Specify the row for which you want to create the vector
-# row_index = 1
+# player_violation = dataset._generate_node_features(x_mirror=False, y_mirror=False)
+# dataset.animate_game(edge_threshold=0.2, direction=False, frame_threshold=5000, save_dir=None, interval=10, annotation='Dead')
 
-# # Create the vector based on the specified row
-# vector = np.all(matrix == 0, axis=1).astype(int)
-
-# np.concatenate([vector.reshape(-1, 1), matrix], axis=1)
+    

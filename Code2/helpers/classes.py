@@ -12,7 +12,7 @@ import numpy as np
 #         'Dribble', 'Miscontrol', 'Block', 'Dribbled Past', 'Clearance',
 #         'Goal Keeper', 'Dispossessed','Shot']
 
-selected_classes = ['Pressure', 'Foul Committed', 'Ball Recovery', 'Duel', 'Shot', 'Dribble','Clearance', 'Goal Keeper']
+selected_classes = ['Pressure', 'Foul Committed', 'Ball Recovery', 'Duel', 'Shot', 'Dribble','Clearance', 'Goal Keeper', "Pass", "Dead"]
 
 # Event name to label index fororor SoccerNet-V2
 EVENT_DICTIONARY_V2_ALIVE = dict(zip(selected_classes, np.arange(len(selected_classes))))
@@ -51,6 +51,8 @@ def get_K_params(chunk_size):
         (0.2*chunk_size, 0.1*chunk_size),
         (0.2*chunk_size, 0.1*chunk_size),
         (0.4*chunk_size, 0.2*chunk_size),
+        (0.2*chunk_size, 0.1*chunk_size),
+        (0.2*chunk_size, 0.1*chunk_size)
         ]
     
     K_LIST = []

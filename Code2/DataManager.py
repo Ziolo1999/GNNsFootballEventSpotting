@@ -1,6 +1,5 @@
 # Code used by all notebooks
 import os
-
 from DataPreprocessing import DatasetPreprocessor
 from FileFinder import MatchFile, find_files
 from typing import Union
@@ -10,27 +9,18 @@ from tqdm import tqdm
 import logging
 from torch_geometric.data import Data
 from torch.utils.data import Dataset
-
 import numpy as np
 import random
-# import pandas as pd
 import os
-
-
 import torch
-
 import logging
-
-from helpers.classes import EVENT_DICTIONARY_V2_ALIVE, K_V2_ALIVE
-
+from helpers.classes import EVENT_DICTIONARY_V2_ALIVE, get_K_params
 from helpers.preprocessing import oneHotToShifts, getTimestampTargets, getChunks_anchors
-
 from torch_geometric.data import Data
 from torch_geometric.data import Batch
 import copy
 from dataclasses import dataclass
     
-
 class CALFData(Dataset):
     def __init__(self, split="train", args=None): 
         '''
@@ -44,16 +34,16 @@ class CALFData(Dataset):
           if the number of classes is 3, then the list will consist of 3 lists. In the first list there will be lists of [game index, frame index, 0].
         '''
         self.args = args
-
         # Gather football data from files
         logging.info("Preprocessing Data")
         self.listGames = find_files("../football_games")
+
         if split == "train":
             DM = DataManager(files=self.listGames[0:10], framerate=args.framerate/25, alive=False)
         elif split == "validate":
             DM = DataManager(files=self.listGames[10:12], framerate=args.framerate/25, alive=False)
-        DM.read_games(focused_annotation=args.focused_annotation)
-
+        
+        DM.read_games(generate_augmented_data=args.generate_augmented_data)
 
         # self.features = args.features
         self.chunk_size = args.chunk_size*args.framerate
@@ -101,24 +91,29 @@ class CALFData(Dataset):
                 
                 # Get edge weights
                 edge_attr = torch.tensor(
-                    [DM.edges[game_indx][frame][x,y] for x,y in zip(rows,cols)], 
-                    dtype=torch.float
-                    )
-                
+                                        [
+                                            [
+                                            DM.edges[game_indx][frame][x, y],
+                                            DM.velocity_diffs[game_indx][frame][x, y],
+                                            DM.acceleration_diffs[game_indx][frame][x, y],
+                                            DM.direction_diffs[game_indx][frame][x, y]
+                                            ] for x, y in zip(rows, cols)
+                                        ], 
+                                        dtype=torch.float
+                                    )
+                                                    
                 # Generate Data 
                 data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
                 representation.append(data)
 
+            # Get game representation
             self.game_representation.append(representation)
             self.game_labels.append(shifts)
 
             for anchor in anchors:
                 self.game_anchors[anchor[2]].append(anchor)
             
-            self.game_size.append(len(representation))
-
-            
-
+            self.game_size.append(len(representation))            
 
     def __getitem__(self, index):
         '''
@@ -130,7 +125,9 @@ class CALFData(Dataset):
 
         cntr = 0
         # Retrieve the game index and the anchor
-        class_selection = random.randint(0, self.num_classes-1)
+        # class_selection = random.randint(0, self.num_classes-1)
+        class_probs = [0.1/3] + [0.9/7]*7 + [0.1/3]*2
+        class_selection = random.choices(np.arange(self.num_classes), weights=class_probs)[0]
         event_selection = random.randint(0, len(self.game_anchors[class_selection])-1)
         game_index = self.game_anchors[class_selection][event_selection][0]
         anchor = self.game_anchors[class_selection][event_selection][1]
@@ -142,8 +139,9 @@ class CALFData(Dataset):
             anchor = self.game_anchors[class_selection][event_selection][1]
 
         # Compute the shift for event chunks
-        # shift = np.random.randint(-self.chunk_size+self.receptive_field, -self.receptive_field)
-        shift = np.random.randint(-self.chunk_size, 0)
+        # TODO: Decide about shift depends on the results of the model
+        shift = np.random.randint(-self.chunk_size+self.receptive_field, -self.receptive_field)
+        # shift = np.random.randint(-self.chunk_size, 0)
         start = anchor + shift
         # Extract the clips
         clip_labels = copy.deepcopy(self.game_labels[game_index][start:start+self.chunk_size])
@@ -171,19 +169,21 @@ def collateGCN(list_of_examples):
             torch.stack([x[1] for x in list_of_examples], dim=0), \
             Batch.from_data_list([x for b in list_of_examples for x in b[2]])
 
-
-
-
 class DataManager():
     # class that parses list of files
     def __init__(self, files: Union[list[MatchFile], None]=None, alive: bool = False, framerate:float=1/5) -> None:
         self.framerate = framerate
+
         self.matches = []
         self.datasets = []
         self.edges = []
+        self.velocity_diffs = []
+        self.acceleration_diffs = []
+        self.direction_diffs = []
+
         self.alive = alive
         self.annotations = []
-
+        
         if files is None:
             files = find_files("../data/EC2020")
 
@@ -199,7 +199,7 @@ class DataManager():
         assert len(self.home) == len(self.files)
         assert len(self.home) == len(self.away)
 
-    def read_games(self, ball_coords:bool=False, focused_annotation=None):
+    def read_games(self, ball_coords:bool=False, focused_annotation=None, generate_augmented_data:bool=False):
         """ Reads all games and provides list features and edges matrices 
         """
         if ball_coords:
@@ -207,30 +207,59 @@ class DataManager():
 
         for f in tqdm(self.files, desc="Data preprocessing"):
             logging.info(f"Reading file {f.datafile}")
+            # Opens dataset
             dataset = DatasetPreprocessor(self.framerate, f.name, self.alive)
-            dataset.open_dataset(f.datafile, f.metafile, f.annotatedfile)
+            dataset._open_dataset(f.datafile, f.metafile, f.annotatedfile)
+            
+            # Generates node features
             player_violation = dataset._generate_node_features()
             if len(player_violation)>0:
                 logging.warning(f"Match {f.name} does not have 11 players in the {len(player_violation)} frames.")
-            dataset._generate_edges(threshold=0.2)
+            
+            # Generate edges and synchronise annotations
+            dataset._generate_edges(threshold=None)
             dataset._synchronize_annotations(focused_annotation=focused_annotation)
+
+            # Appends data
             self.datasets.append(dataset.matrix)
             self.edges.append(dataset.edges)
             self.matches.append(f.name)
             self.annotations.append(dataset.annotations)
+            self.velocity_diffs.append(dataset.velocity_diff)
+            self.acceleration_diffs.append(dataset.acceleration_diff)
+            self.direction_diffs.append(dataset.direction_diff)
+
+            # Generate augmented data
+            if generate_augmented_data:
+                mirror_pairs = [(True, False), (False, True), (True, True)]
+                for x_mirror, y_mirror in mirror_pairs:
+
+                    # Generate mirrored actions
+                    player_violation = dataset._generate_node_features(x_mirror, y_mirror)
+                    dataset._generate_edges(None)
+                    # dataset._synchronize_annotations(focused_annotation=focused_annotation)
+                    
+                    # Add to dataset
+                    self.datasets.append(dataset.matrix)
+                    self.edges.append(dataset.edges)
+                    self.matches.append(f.name)
+                    self.annotations.append(dataset.annotations)
+                    self.velocity_diffs.append(dataset.velocity_diff)
+                    self.acceleration_diffs.append(dataset.acceleration_diff)
+                    self.direction_diffs.append(dataset.direction_diff)
             
             if ball_coords:
                 self.ball_coords.append(dataset.ball_coords)
             del dataset
     
     def player_violation(self):
-        """ Reads all games and verify if there are player violations
+        """ Reads all games and verify if there are player violations used only for EDA
         """
         games_violated = []
         for f in tqdm(self.files, desc="Player violation"):
             logging.info(f"Reading {f.name} game")
             dataset = DatasetPreprocessor(self.framerate, f.home, self.alive)
-            dataset.open_dataset(f.datafile, f.metafile)
+            dataset._open_dataset(f.datafile, f.metafile)
             frame_nr = len(dataset._player_violation())
             if frame_nr>0:
                 logging.warning(f"Match {f.name} does not have 11 players in {frame_nr} frames.")  
@@ -242,3 +271,53 @@ class DataManager():
 
     #     data = Data(x=x, edge_index=edge_index.t().contiguous())
     
+# @dataclass
+# class Args:
+#     receptive_field = 6
+#     framerate = 5
+#     chunks_per_epoch = 1824
+#     class_split = "alive"
+#     num_detections = 15
+#     chunk_size = 30
+#     batch_size = 32
+#     input_channel = 13
+#     feature_multiplier=1
+#     backbone_player = "GCN"
+#     max_epochs=180
+#     load_weights=None
+#     model_name="Testing_Model"
+#     evaluation_frequency=20
+#     dim_capsule=16
+#     lambda_coord=5.0
+#     lambda_noobj=0.5
+#     loss_weight_segmentation=1.0
+#     loss_weight_detection=0.0
+#     patience=25
+#     LR=1e-03
+#     GPU=0 
+#     max_num_worker=1
+#     loglevel='INFO'
+#     annotation_nr = 10
+#     K_parameters = get_K_params(chunk_size)
+#     focused_annotation = None
+#     generate_augmented_data = True
+
+
+'''
+The order of features is as follows: 
+x-position, y-position, distance to the ball, speed, x-direction, y-direction, movement direction (in radians), order of average position, team affiliation, red card flag, acceleration, avg velocity, avg acceleration.
+There is also order of players in the matrix. First eleven are the Belgian players, the last 11 are the opponents players.
+
+'''
+
+# args = Args
+# collate_fn = collateGCN
+# train_dataset = CALFData(split="train", args=args)
+# train_loader = torch.utils.data.DataLoader(train_dataset,
+#             batch_size=args.batch_size, shuffle=True, collate_fn=collate_fn)
+
+# label, targets, representations = next(iter(train_loader))
+
+# listGames = find_files("../football_games")
+# DM = DataManager(files=listGames[1:2], framerate=args.framerate/25, alive=False)
+# DM.read_games(generate_augmented_data=True)

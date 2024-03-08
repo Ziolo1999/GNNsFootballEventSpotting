@@ -26,7 +26,7 @@ def generate_annotations():
     #     'Dribble', 'Miscontrol', 'Block', 'Dribbled Past', 'Clearance',
     #     'Goal Keeper', 'Dispossessed','Shot']
     
-    selected_classes = ['Pressure', 'Foul Committed', 'Ball Recovery', 'Duel', 'Shot', 'Dribble', 'Clearance', 'Goal Keeper']
+    selected_classes = ['Pressure', 'Foul Committed', 'Ball Recovery', 'Duel', 'Shot', 'Dribble', 'Clearance', 'Goal Keeper', 'Pass']
 
     # selected_classes = ['Ball Recovery', 'Duel', 'Shot', 'Dribble']
 
@@ -142,3 +142,13 @@ def generate_annotations():
 
 if __name__ == '__main__':
     annotations = generate_annotations()
+
+# from FileFinder import find_files
+# listGames = find_files("../football_games")
+# listGames[11]
+# df_matches = sb.matches(competition_id=55, season_id=43)
+# selected_matches = df_matches[(df_matches['home_team']=='Belgium') | (df_matches['away_team']=='Belgium')]
+# event = sb.events(match_id=3788743)
+# event.sort_values(by=["period","timestamp"], inplace=True)
+# event[event.type=="Foul Committed"]
+# 15000/5/60

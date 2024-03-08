@@ -264,12 +264,12 @@ class Visualiser():
                 ax.set_title(f"Segmentation {ann}")
                 ax.legend()
         else:
-            fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+            fig, axes = plt.subplots(1, 1, figsize=(10, 10))
             ann_index = ann_encoder[annotation]
-            seg_ann = ax.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_index], label='Annotations')
-            seg_pred = ax.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),0], label='Prediction')
-            ax.set_title(f"Segmentation {ann_index}")
-            ax.legend()
+            axes.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_index], label='Annotations')
+            axes.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),0], label='Prediction')
+            axes.set_title(f"Segmentation {ann_index}")
+            axes.legend()
 
         # Draw spotting plots
         # spot_pred = ax2.plot(np.arange(0, int(frame_threshold*smooths_rate)), self.spotting[:int(frame_threshold*smooth_rate),2+ann_indx], label='Prediction')
@@ -277,10 +277,11 @@ class Visualiser():
         # ax2.set_title(f"Spotting")
         # ax2.legend()
 
-        if save_dir != None:
-            plt.savefig(save_dir)
-        else:
-            plt.show()
+        # if save_dir != None:
+        #     plt.savefig(save_dir)
+        # else:
+        #     plt.show()
+        return fig, axes
     
     def calculate_MAP(self):
         
