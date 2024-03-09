@@ -126,19 +126,19 @@ def generate_annotations():
 
 
 
-    path = "football_games"
-    for tournament, games in annotations.items():
-        for game in games.keys():
-            game_path = f"{path}/{tournament}/{game}"
+    # path = "football_games"
+    # for tournament, games in annotations.items():
+    #     for game in games.keys():
+    #         game_path = f"{path}/{tournament}/{game}"
 
-            if not os.path.exists(game_path):
-                game_path = f"{path}/{tournament}/{game[4:7]}-{game[0:3]}{game[7:]}"
+    #         if not os.path.exists(game_path):
+    #             game_path = f"{path}/{tournament}/{game[4:7]}-{game[0:3]}{game[7:]}"
             
-            first_half_ann = annotations[tournament][game][0]
-            second_half_ann = annotations[tournament][game][1]
-            for root, dirs, files in os.walk(game_path):
-                np.savez(f"{root}/annotation.npz", array1=first_half_ann, array2=second_half_ann)
-    return annotations
+    #         first_half_ann = annotations[tournament][game][0]
+    #         second_half_ann = annotations[tournament][game][1]
+    #         for root, dirs, files in os.walk(game_path):
+    #             np.savez(f"{root}/annotation.npz", array1=first_half_ann, array2=second_half_ann)
+    return ann
 
 if __name__ == '__main__':
     annotations = generate_annotations()
@@ -152,3 +152,13 @@ if __name__ == '__main__':
 # event.sort_values(by=["period","timestamp"], inplace=True)
 # event[event.type=="Foul Committed"]
 # 15000/5/60
+selected_classes = ['Pressure', 'Foul Committed', 'Ball Recovery', 'Duel', 'Shot', 'Dribble', 'Clearance', 'Goal Keeper', 'Pass']
+occs = [annotations.occurences[ann] for ann in selected_classes]
+occs = occs / np.sum(occs)
+occs = np.round(occs, 2)
+occs = 1 - occs
+len(occs)
+probs = [0.1/2] + [0.9/7]*7 + [0.1/2]
+np.random.choice(np.arange(9), p=probs)
+import random 
+random.choices(np.arange(9), weights=np.arange(9), )[0]

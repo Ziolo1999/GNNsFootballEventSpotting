@@ -40,7 +40,7 @@ K_V2_ALIVE = torch.FloatTensor([
     [10,20,20,10,20,10,10,20]
     ])
 
-def get_K_params(chunk_size):
+def get_K_params(chunk_size, selected_ann=None):
 
     K_vals = [
         (0.2*chunk_size, 0.1*chunk_size),
@@ -54,6 +54,9 @@ def get_K_params(chunk_size):
         (0.2*chunk_size, 0.1*chunk_size),
         (0.2*chunk_size, 0.1*chunk_size)
         ]
+    
+    if selected_ann:
+        K_vals = [K_vals[EVENT_DICTIONARY_V2_ALIVE[selected_ann]]]
     
     K_LIST = []
     for K in range(4):

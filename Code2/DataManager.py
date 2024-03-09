@@ -43,7 +43,7 @@ class CALFData(Dataset):
         elif split == "validate":
             DM = DataManager(files=self.listGames[10:12], framerate=args.framerate/25, alive=False)
         
-        DM.read_games(generate_augmented_data=args.generate_augmented_data)
+        DM.read_games(focused_annotation=args.focused_annotation,generate_augmented_data=args.generate_augmented_data)
 
         # self.features = args.features
         self.chunk_size = args.chunk_size*args.framerate
@@ -91,17 +91,17 @@ class CALFData(Dataset):
                 
                 # Get edge weights
                 edge_attr = torch.tensor(
-                                        [
-                                            [
-                                            DM.edges[game_indx][frame][x, y],
-                                            DM.velocity_diffs[game_indx][frame][x, y],
-                                            DM.acceleration_diffs[game_indx][frame][x, y],
-                                            DM.direction_diffs[game_indx][frame][x, y]
-                                            ] for x, y in zip(rows, cols)
-                                        ], 
-                                        dtype=torch.float
-                                    )
-                                                    
+                    [
+                        [
+                        DM.edges[game_indx][frame][x, y],
+                        DM.velocity_diffs[game_indx][frame][x, y],
+                        DM.acceleration_diffs[game_indx][frame][x, y],
+                        DM.direction_diffs[game_indx][frame][x, y]
+                        ] for x, y in zip(rows, cols)
+                    ], 
+                    dtype=torch.float
+                )
+                            
                 # Generate Data 
                 data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
                 representation.append(data)
@@ -125,9 +125,12 @@ class CALFData(Dataset):
 
         cntr = 0
         # Retrieve the game index and the anchor
-        # class_selection = random.randint(0, self.num_classes-1)
-        class_probs = [0.1/3] + [0.9/7]*7 + [0.1/3]*2
-        class_selection = random.choices(np.arange(self.num_classes), weights=class_probs)[0]
+        if self.args.focused_annotation is None:
+            class_probs = [0.1/3] + [0.9/7]*7 + [0.1/3]*2
+            class_selection = random.choices(np.arange(self.num_classes), weights=class_probs)[0]
+        else:
+            class_selection = random.randint(0, self.num_classes-1)
+
         event_selection = random.randint(0, len(self.game_anchors[class_selection])-1)
         game_index = self.game_anchors[class_selection][event_selection][0]
         anchor = self.game_anchors[class_selection][event_selection][1]
@@ -141,6 +144,9 @@ class CALFData(Dataset):
         # Compute the shift for event chunks
         # TODO: Decide about shift depends on the results of the model
         shift = np.random.randint(-self.chunk_size+self.receptive_field, -self.receptive_field)
+        if self.args.focused_annotation:
+            if random.random()<0.5:
+                shift = -self.chunk_size
         # shift = np.random.randint(-self.chunk_size, 0)
         start = anchor + shift
         # Extract the clips

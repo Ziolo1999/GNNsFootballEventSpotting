@@ -55,21 +55,21 @@ class ContextAwareModel(nn.Module):
         # -------------------
         # detection module
         # -------------------       
-        self.max_pool_spot = nn.MaxPool2d(kernel_size=(3,1),stride=(2,1))
-        self.kernel_spot_size = 3
-        self.pad_spot_1 = nn.ZeroPad2d((0,0,(self.kernel_spot_size-1)//2, self.kernel_spot_size-1-(self.kernel_spot_size-1)//2))
-        self.conv_spot_1 = nn.Conv2d(in_channels=self.num_classes*(self.dim_capsule+1), out_channels=32, kernel_size=(self.kernel_spot_size,1))
-        self.max_pool_spot_1 = nn.MaxPool2d(kernel_size=(3,1),stride=(2,1))
-        self.pad_spot_2 = nn.ZeroPad2d((0,0,(self.kernel_spot_size-1)//2, self.kernel_spot_size-1-(self.kernel_spot_size-1)//2))
-        self.conv_spot_2 = nn.Conv2d(in_channels=32, out_channels=16, kernel_size=(self.kernel_spot_size,1))
-        self.max_pool_spot_2 = nn.MaxPool2d(kernel_size=(3,1),stride=(2,1))
+        # self.max_pool_spot = nn.MaxPool2d(kernel_size=(3,1),stride=(2,1))
+        # self.kernel_spot_size = 3
+        # self.pad_spot_1 = nn.ZeroPad2d((0,0,(self.kernel_spot_size-1)//2, self.kernel_spot_size-1-(self.kernel_spot_size-1)//2))
+        # self.conv_spot_1 = nn.Conv2d(in_channels=self.num_classes*(self.dim_capsule+1), out_channels=32, kernel_size=(self.kernel_spot_size,1))
+        # self.max_pool_spot_1 = nn.MaxPool2d(kernel_size=(3,1),stride=(2,1))
+        # self.pad_spot_2 = nn.ZeroPad2d((0,0,(self.kernel_spot_size-1)//2, self.kernel_spot_size-1-(self.kernel_spot_size-1)//2))
+        # self.conv_spot_2 = nn.Conv2d(in_channels=32, out_channels=16, kernel_size=(self.kernel_spot_size,1))
+        # self.max_pool_spot_2 = nn.MaxPool2d(kernel_size=(3,1),stride=(2,1))
 
-        # Confidence branch
-        self.conv_conf = nn.Conv2d(in_channels=16*(self.chunk_size//8-1), out_channels=self.num_detections*2, kernel_size=(1,1))
+        # # Confidence branch
+        # self.conv_conf = nn.Conv2d(in_channels=16*(self.chunk_size//8-1), out_channels=self.num_detections*2, kernel_size=(1,1))
 
-        # Class branch
-        self.conv_class = nn.Conv2d(in_channels=16*(self.chunk_size//8-1), out_channels=self.num_detections*self.num_classes, kernel_size=(1,1))
-        self.softmax = nn.Softmax(dim=-1)
+        # # Class branch
+        # self.conv_class = nn.Conv2d(in_channels=16*(self.chunk_size//8-1), out_channels=self.num_detections*self.num_classes, kernel_size=(1,1))
+        # self.softmax = nn.Softmax(dim=-1)
 
 
     def load_weights(self, weights=None):
