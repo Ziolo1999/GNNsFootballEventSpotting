@@ -1,6 +1,11 @@
 
 import numpy as np
 import torch
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+from mplsoccer.pitch import Pitch
+from matplotlib.collections import LineCollection
+from helpers.classes import EVENT_DICTIONARY_V2_ALIVE as classes_enc
 
 def unproject_image_point(homography, point2D):
     pitchpoint = homography @ point2D
@@ -131,6 +136,11 @@ def getChunks_anchors(labels, game_index, params, chunk_size=240, receptive_fiel
 
     return anchors
 
+def getTargets(clip_labels, receptive_field, fps):
+    clip_targets = np.where(clip_labels[int(np.ceil(receptive_field/2)):-int(np.ceil(receptive_field/2))]==0, 1, 0)
+    any_presence_voting = clip_targets.reshape((-1, fps, clip_targets.shape[1])).max(axis=1)
+    return any_presence_voting
+
 def getTimestampTargets(labels, num_detections):
 
     targets = np.zeros((labels.shape[0],num_detections,2+labels.shape[-1]), dtype='float')
@@ -247,3 +257,54 @@ def batch2long(output_segmentation, video_size, chunk_size, receptive_field):
             start = video_size - chunk_size 
             last = True
     return segmentation_long
+
+def animate_clip(coords_arr, target, annotation):
+    pitch = Pitch(pitch_color='grass', line_color='white', stripe=True)
+
+    # get scalars to represent players position on the map
+    scalars = (pitch.dim.pitch_length, pitch.dim.pitch_width)
+    coords = np.copy(coords_arr[:,0:2,:])
+    coords[:,0,:] = coords[:,0,:]*scalars[0]
+    coords[:,1,:] = coords[:,1,:]*scalars[1]
+
+    # create base animation
+    fig, (ax, ax2) = plt.subplots(2, 1, figsize=(10, 15))
+    pitch.draw(ax=ax)
+
+    # create an empty collection for edges
+    edge_collection = LineCollection([], colors='white', linewidths=0.5)
+
+    # add the collection to the axis
+    ax.add_collection(edge_collection)
+
+    # base scatter boxes
+    scat_home = ax.scatter([], [], c="r", s=50)
+    scat_away = ax.scatter([], [], c="b", s=50)
+
+    # PLOT ANNOTATIONS
+    ann = ax2.plot(np.arange(0, target.shape[0]), target[:,classes_enc[annotation]], label=annotation)
+    ax2.set_title(annotation)
+    ax2.legend()
+
+    def init():
+        scat_home.set_offsets(np.array([]).reshape(0, 2))
+        scat_away.set_offsets(np.array([]).reshape(0, 2))
+        ann[0].set_data(np.arange(0, target.shape[0]), target[:, classes_enc[annotation]])
+        return (scat_home,scat_away)
+
+    # get update function
+    def update(frame):
+        scat_home.set_offsets(coords[frame,:,:11].T)
+        scat_away.set_offsets(coords[frame,:,11:].T)
+        ann[0].set_data(np.arange(0, int(frame//5)), target[:int(frame//5), classes_enc[annotation]])
+
+        return (scat_home, scat_away)
+
+
+    # set order of the plot components
+    scat_home.set_zorder(3) 
+    scat_away.set_zorder(3)
+
+    # use animation 
+    ani = animation.FuncAnimation(fig=fig, func=update, frames=coords_arr.shape[0], init_func=init, interval=60)
+    ani.save("animations/TargetLoaderTest.mp4", writer='ffmpeg') 

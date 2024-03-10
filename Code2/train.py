@@ -12,17 +12,14 @@ import math
 
 def trainer(train_loader,
             val_loader,
-            # val_metric_loader,
-            # test_loader,
             model,
             optimizer,
             scheduler,
             criterion,
-            weights,
             model_name,
             max_epochs=1000,
-            evaluation_frequency=20,
-            save_dir="models/detector.pth.tar"):
+            save_dir="models/detector.pth.tar",
+            train_seg=True):
 
     logging.info("start training")
 
@@ -31,6 +28,11 @@ def trainer(train_loader,
 
     losses = LossHolder()
     early_stopping = EarlyStopping()
+
+    if train_seg:
+        train = train_segmentation
+    else:
+        train = train_spotting
 
     for epoch in range(max_epochs):
         best_model_path = os.path.join("models", model_name, "model.pth.tar")
@@ -41,7 +43,6 @@ def trainer(train_loader,
             train_loader,
             model,
             criterion,
-            weights,
             optimizer,
             epoch + 1,
             train = True)
@@ -52,7 +53,6 @@ def trainer(train_loader,
                 val_loader,
                 model,
                 criterion,
-                weights,
                 optimizer,
                 epoch + 1,
                 train = False)
@@ -127,19 +127,16 @@ def trainer(train_loader,
 
     return losses
 
-def train(dataloader,
+def train_segmentation(dataloader,
           model,
           criterion, 
-          weights,
           optimizer,
           epoch,
           train=False):
 
     batch_time = AverageMeter()
     data_time = AverageMeter()
-    losses = AverageMeter()
     losses_segmentation = AverageMeter()
-    losses_spotting = AverageMeter()
 
     # switch to train mode
     if train:
@@ -149,7 +146,7 @@ def train(dataloader,
         
     end = time.time()
     with tqdm(enumerate(dataloader), total=len(dataloader), ncols=160) as t:
-        for i, (labels, targets, representations) in t: 
+        for i, (labels, _, representations) in t: 
             # measure data loading time
             data_time.update(time.time() - end)
             # if torch.backends.mps.is_available():
@@ -160,14 +157,10 @@ def train(dataloader,
                 device = torch.device("cpu")
                 
             labels = labels.float().type(torch.float32).to(device)
-            targets = targets.float().type(torch.float32).to(device)
+            # targets = targets.float().type(torch.float32).to(device)
             model = model.to(device)
 
-            if dataloader.dataset.args.backbone_player == "3DConv":
-                representations = representations.cuda().float().type(torch.float32)
-                representations = representations.permute(0,4,1,2,3).contiguous()
-            elif "GCN" in dataloader.dataset.args.backbone_player:
-                representations = representations.to(targets.device)
+            representations = representations.to(labels.device)
 
             # compute output
             model_start = time.time()
@@ -175,24 +168,87 @@ def train(dataloader,
             model_end = time.time()
 
             seg_start = time.time()
-            loss_segmentation = criterion[0](labels, output_segmentation, device) 
+            loss_segmentation = criterion(labels, output_segmentation, device) 
             seg_end = time.time()
 
-            # spot_start = time.time()
-            # loss_spotting = criterion[1](targets, output_spotting)
-            # spot_end = time.time()
-
-            loss = weights[0]*loss_segmentation # + weights[1]*loss_spotting
+            # loss = weights[0]*loss_segmentation + weights[1]*loss_spotting
 
             # measure accuracy and record loss
-            losses.update(loss.item())
             losses_segmentation.update(loss_segmentation.item())
-            # losses_spotting.update(loss_spotting.item())
 
             if train:
                 # compute gradient and do SGD step
                 optimizer.zero_grad()
-                loss.backward()
+                loss_segmentation.backward()
+                optimizer.step()
+
+            # measure elapsed time
+            batch_time.update(time.time() - end)
+            end = time.time()
+
+            if train:
+                desc = f'Train {epoch}: '
+            else:
+                desc = f'Evaluate {epoch}: '
+
+            desc += f'Time {batch_time.avg:.3f}s '
+            desc += f'(it:{batch_time.val:.3f}s) '
+            desc += f'Data:{data_time.avg:.3f}s '
+            desc += f'(it:{data_time.val:.3f}s) '
+            desc += f'Loss {losses_segmentation.avg:.4e} '
+            t.set_description(desc)
+
+    return losses_segmentation.avg
+
+def train_spotting(dataloader,
+          model,
+          criterion, 
+          optimizer,
+          epoch,
+          train=False):
+
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses_spotting = AverageMeter()
+
+    # switch to train mode
+    if train:
+        model.train()
+    else:
+        model.eval()
+        
+    end = time.time()
+    with tqdm(enumerate(dataloader), total=len(dataloader), ncols=160) as t:
+        for i, (_, targets, representations) in t: 
+            # measure data loading time
+            data_time.update(time.time() - end)
+            # if torch.backends.mps.is_available():
+            #     device = torch.device("mps")            
+            if torch.cuda.is_available():
+                device = torch.device("cuda")
+            else:
+                device = torch.device("cpu")
+                
+            targets = targets.float().type(torch.float32).to(device)
+            model = model.to(device)
+            representations = representations.to(targets.device)
+
+            # compute output
+            model_start = time.time()
+            output_spotting = model(representations)
+            model_end = time.time()
+
+            seg_start = time.time()
+            loss_spotting = criterion(output_spotting, targets) 
+            seg_end = time.time()
+
+            # measure accuracy and record loss
+            losses_spotting.update(loss_spotting.item())
+
+            if train:
+                # compute gradient and do SGD step
+                optimizer.zero_grad()
+                loss_spotting.backward()
                 optimizer.step()
 
             # measure elapsed time
@@ -207,16 +263,10 @@ def train(dataloader,
             desc += f'(it:{batch_time.val:.3f}s) '
             desc += f'Data:{data_time.avg:.3f}s '
             desc += f'(it:{data_time.val:.3f}s) '
-            desc += f'Loss {losses.avg:.4e} '
-            # desc += f'Loss Seg {losses_segmentation.avg:.4e} '
-            # desc += f'Loss Spot {losses_spotting.avg:.4e} '
-            # desc += f'Model Time {model_end-model_start:.4e} '
-            # desc += f'Loss Seg Time {seg_end-seg_start:.4e} '
-            # desc += f'Loss Spot Time {spot_end-spot_start:.4e}'
+            desc += f'Loss {losses_spotting.avg:.4e} '
             t.set_description(desc)
 
-    return losses.avg
-
+    return losses_spotting.avg
 
 # def test(dataloader,model, model_name, save_predictions=False):
 #     batch_time = AverageMeter()

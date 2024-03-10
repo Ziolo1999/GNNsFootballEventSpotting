@@ -10,19 +10,23 @@ from matplotlib.collections import LineCollection
 from helpers.classes import EVENT_DICTIONARY_V2_ALIVE as classes_enc
 
 class DatasetPreprocessor:
-    """ Data class used for preprocessing of the positional data and generation of the annotations"""
+    """ Data class used for preprocessing of the positional data and annotations generation"""
     def __init__(self, sample_rate: float, name, alive: bool = False):
         
-        self.alive = alive
-        self.dataset = None
-        self.sample_rate = sample_rate
+        # Attributes to store raw dataset 
         self.switch_frames = None
+        self.dataset = None
+        
+        self.alive = alive
+        self.sample_rate = sample_rate
+        
+        # counters for annotation synchorinisation
         self.first_period_cntr = 0
         self.second_period_cntr = 0
 
         # parse helpers
         self.pitch = None
-        self.fps = 4   
+        self.fps = 5   
 
         # helpers for data preprocessing
         if name[:3] == "BEL":
@@ -36,14 +40,12 @@ class DatasetPreprocessor:
         self.missing_players_games = ['NED-BEL', 'ICE-BEL']
 
     def _open_dataset(self, datafilepath: str, metafilepath: str, annotatedfilepath: str) -> TrackingDataset:
-        """Parse file using kloppy lib and create unique player df
+        """Parse file using kloppy lib and ctores raw dataset and unsynchronised annotations
 
         Args:
             datafilepath (str): filepath
             metafilepath (str): filepath
-            
-        Returns:
-            TrackingDataset: kloppy dataset
+            annotatedfilepath (str): filepath
         """
         serializer = TRACABSerializer()
         with open(datafilepath, "rb") as data, open(metafilepath, "rb") as meta:
@@ -79,27 +81,35 @@ class DatasetPreprocessor:
                     keys: frames when substitution occured
                     values: list of tuples consisting pairs (swapped, swapping)
         """
+
         dataset = self.dataset
         frames = {
             "home": {},
             "away": {}
         }
-        old_players = list(map(lambda x: x.player_id, dataset.frames[0].players_coordinates.keys()))
+        
+        old_players = list(
+            map(lambda x: x.player_id, dataset.frames[0].players_coordinates.keys())
+            )
 
         for index, frame in enumerate(dataset.frames):
             if self.alive:
                 if frame.ball_state.value != "alive":
                     continue
             current_players = list(map(lambda x: x.player_id, frame.players_coordinates.keys()))
+            
             # detect player switches
             for team_id in ["home", "away"]:
+                
                 current_players_team = [p for p in current_players if team_id in p]
                 old_players_team = [p for p in old_players if team_id in p]
+
                 swapped_players = list(set(old_players_team) - set(current_players_team))
                 swapping_players = list(set(current_players_team) - set(old_players_team))
 
                 if len(swapped_players) > 0:
                     frames[team_id][index] = list(zip(swapped_players, swapping_players))
+
             old_players = current_players  
         self.switch_frames = frames
         return frames
@@ -109,9 +119,11 @@ class DatasetPreprocessor:
         self.player_decoder = {}
         favourable_counter = 0
         opposing_counter = 11
+
         for frame in self.dataset.frames:
             for player in frame.players_data:
                 if player.player_id not in self.player_encoder.keys():
+                    
                     # check if belgium player to assign first eleven encoders
                     if player.player_id[0:4] == self.belgium_role:
                         self.player_encoder[player.player_id] = favourable_counter
@@ -121,6 +133,7 @@ class DatasetPreprocessor:
                         self.player_encoder[player.player_id] = opposing_counter
                         self.player_decoder[opposing_counter] = player.player_id
                         opposing_counter += 1
+
             if len(self.player_encoder.keys())==22:
                 break
     
@@ -129,25 +142,31 @@ class DatasetPreprocessor:
         starting_players = list(map(lambda x: x.player_id, self.dataset.frames[0].players_coordinates.keys()))
         starting_frame = [[0] for x in range(len(starting_players))]
         frame_borders = dict(zip(starting_players, starting_frame))
+        
         # generate substitutions
         substitutions = self.substitution_detection()
+        
         # record frames when swap occured
         for vals in substitutions.values():
             for frame_index, frame_swaps in vals.items():
                 for swap in frame_swaps:
                     frame_borders[swap[0]].append(frame_index)
                     frame_borders[swap[1]] = [frame_index]
+        
         # assign last fram for players present at the end
         for _, val in frame_borders.items():
             if len(val) == 1:
                 val.append(len(self.dataset.frames)-1)
+
         return frame_borders
 
     def get_player_coordinates(self, frame):  
+        
         coord_matrix = np.zeros((22,2))
         ball_coord = np.array([frame.ball_coordinates.x, frame.ball_coordinates.y])
         ball_dist = np.zeros((22,1))
         player_speed = np.zeros((22,1))
+
         for player, playerdata in frame.players_data.items():
             if (self.belgium_field_part == "left") & (frame.period.id == 1):
                 player_coord = [playerdata.coordinates.x, playerdata.coordinates.y]
@@ -184,7 +203,7 @@ class DatasetPreprocessor:
             
         elif (self.belgium_field_part == "right") & (frame.period.id == 1):
             ball_coord = [1-frame.ball_coordinates.x, 1-frame.ball_coordinates.y]
-            
+
         else:
             ball_coord = [frame.ball_coordinates.x, frame.ball_coordinates.y]
         return ball_coord
@@ -198,12 +217,14 @@ class DatasetPreprocessor:
             return frame.timestamp+2700
         
     def player_violation(self):
+
         player_violation = []
         for frame in self.dataset.frames:
             if frame.period.id == 1:
                 timestamp = frame.timestamp
             elif frame.period.id == 2:
                 timestamp = frame.timestamp+2700
+
             # check if all players are present in the current frame:
             if len(frame.players_coordinates.keys())<22:
                 player_violation.append(timestamp)
@@ -232,6 +253,7 @@ class DatasetPreprocessor:
         # find substitutions
         self.substitution_detection()
         for index, frame in enumerate(self.dataset.frames):
+
             # check if all players are present in the current frame:
             if len(frame.players_coordinates.keys())<22:
                 player_violation.append(len(frame.players_coordinates.keys()))
@@ -247,6 +269,7 @@ class DatasetPreprocessor:
                 for swap in swap_list:
                     self.player_decoder[self.player_encoder[swap[0]]] = swap[1]
                     self.player_encoder[swap[1]] = self.player_encoder[swap[0]]
+
             if index in self.switch_frames["away"]:
                 swap_list = self.switch_frames["away"][index]
                 for swap in swap_list:
@@ -337,13 +360,15 @@ class DatasetPreprocessor:
         self.matrix = np.concatenate((self.matrix, x_directions, y_directions, movement_direction, avg_position_total, team_affiliation, red_flag, acceleration, repeated_mean_velocity, repeated_mean_acceleration), axis=1)
         
         # mising player cases discovered at data preprocessing part
-        if self.name in self.missing_players_games:
-            player_violation_frame_indx = []
-            for index, frame in enumerate(self.dataset.frames):
-                # check if all players are present in the current frame:
-                if len(frame.players_coordinates.keys())<22:
-                    player_violation_frame_indx.append(index)
-            self.matrix = np.delete(self.matrix, player_violation_frame_indx, axis=0)
+        # if self.name in self.missing_players_games:
+        #     player_violation_frame_indx = []
+            
+        #     for index, frame in enumerate(self.dataset.frames):
+        #         # check if all players are present in the current frame:
+        #         if len(frame.players_coordinates.keys())<22:
+        #             player_violation_frame_indx.append(index)
+            
+        #     self.matrix = np.delete(self.matrix, player_violation_frame_indx, axis=0)
 
         return player_violation
 
@@ -416,6 +441,7 @@ class DatasetPreprocessor:
         if focused_annotation is not None:
             selected_annotations = self.annotations[:, classes_enc[focused_annotation]]
             self.annotations = np.expand_dims(selected_annotations, axis=1)
+        
         # genereate annotations for frames that nothing happened
         # none_ann_vector = np.all(self.annotations == 0, axis=1).astype(int)
         # self.annotations = np.concatenate([none_ann_vector.reshape(-1, 1), self.annotations], axis=1)
@@ -458,6 +484,7 @@ class DatasetPreprocessor:
         
         # create an empty collection for edges
         edge_collection = LineCollection([], colors='white', linewidths=0.5)
+        
         # add the collection to the axis
         ax.add_collection(edge_collection)
 
@@ -465,8 +492,10 @@ class DatasetPreprocessor:
         scat_home = ax.scatter([], [], c="r", s=50)
         scat_away = ax.scatter([], [], c="b", s=50)
         scat_ball = ax.scatter([], [], c="black", s=50)
+        
         # base title
         timestamp = ax.set_title(f"Timestamp: {0}")
+        
         # base for movement direction
         if direction:
             movement_angles_home = self.matrix[0, 6,:11]  
@@ -492,12 +521,15 @@ class DatasetPreprocessor:
         
         # get update function
         def update(frame):
+
             scat_home.set_offsets(coords[frame,:,:11].T)
             scat_away.set_offsets(coords[frame,:,11:].T)
             scat_ball.set_offsets(ball_coords[frame])
             ann[0].set_data(np.arange(0, int(frame) + 1), self.annotations[:int(frame)+1, classes_enc[annotation]])
+            
             # convert seconds to minutes and seconds
             minutes, seconds = divmod(self.game_details[frame], 60)
+
             # format the output as mm:ss
             formatted_time = f"{int(np.round(minutes, 0))}:{int(np.round(seconds, 0))}"
             timestamp.set_text(f"Timestamp: {formatted_time}")
@@ -544,6 +576,7 @@ class DatasetPreprocessor:
             ani.save(save_dir, writer='ffmpeg') 
         else:
             plt.show()
+
         # delete data copies
         del coords
         del ball_coords
@@ -556,8 +589,10 @@ class DatasetPreprocessor:
 
         pitch = Pitch(pitch_color="grass", line_color='white',
               stripe=False) 
+        
         # get scalars to represent players position on the map
         scalars = (pitch.dim.pitch_length, pitch.dim.pitch_width)
+        
         # get dictionary discribing during which frame the player occured
         frame_borders = self.get_player_presence()
 
@@ -572,12 +607,13 @@ class DatasetPreprocessor:
             belgium_cnt = len(belgium_players)
             opponent_players = [home for home in frame_borders.keys() if "home" in home]
             opponent_cnt = len(opponent_players)
+        
         # plot heatmaps for Belgium 
         nrows = int(np.ceil(belgium_cnt/4))
-
         fig, axs = pitch.draw(nrows=nrows, ncols=4, figsize=(8, 6))
         player_cntr = 0
         flattened_axes = axs.flatten()
+
         for ax in flattened_axes:
             player = belgium_players[player_cntr]
             player_cntr += 1
@@ -608,6 +644,6 @@ class DatasetPreprocessor:
 # dataset._open_dataset(files[1].datafile, files[1].metafile, files[1].annotatedfile)
 
 # player_violation = dataset._generate_node_features(x_mirror=False, y_mirror=False)
-# dataset.animate_game(edge_threshold=0.2, direction=False, frame_threshold=5000, save_dir=None, interval=10, annotation='Dead')
+# dataset.animate_game(edge_threshold=0.2, direction=False, frame_threshold=15000, save_dir=None, interval=10, annotation='Shot')
 
     

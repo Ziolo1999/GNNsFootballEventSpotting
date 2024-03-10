@@ -1,12 +1,9 @@
 PLAN:
-1st
--> Include dead and pass for annotations (found a bug with annotations)
--> Standardise features?
--> Remove threshold for edges 
--> Generate augmented data, by mirroring actions
-2nd
--> Transfer learning: learn model for all then fine tune to specific events
--> For single models different way of choosing an anchor so negative samples were chosen
+-> Updated visualiser with edge attributes
+-> Create the visualiser for spotting module
+-> Train again the sgementation model
+-> Train again the fine-tuned models
+-> Potential improvement: apply weights in the ContextAwareLoss
 
 
 

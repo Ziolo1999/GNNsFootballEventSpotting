@@ -14,8 +14,8 @@ import random
 import os
 import torch
 import logging
-from helpers.classes import EVENT_DICTIONARY_V2_ALIVE, get_K_params
-from helpers.preprocessing import oneHotToShifts, getTimestampTargets, getChunks_anchors
+from helpers.classes import EVENT_DICTIONARY_V2_ALIVE
+from helpers.preprocessing import oneHotToShifts, getTimestampTargets, getChunks_anchors, getTargets
 from torch_geometric.data import Data
 from torch_geometric.data import Batch
 import copy
@@ -39,25 +39,24 @@ class CALFData(Dataset):
         self.listGames = find_files("../football_games")
 
         if split == "train":
-            DM = DataManager(files=self.listGames[0:10], framerate=args.framerate/25, alive=False)
+            DM = DataManager(files=self.listGames[0:10], framerate=args.fps/25, alive=False)
         elif split == "validate":
-            DM = DataManager(files=self.listGames[10:12], framerate=args.framerate/25, alive=False)
+            DM = DataManager(files=self.listGames[10:12], framerate=args.fps/25, alive=False)
         
         DM.read_games(focused_annotation=args.focused_annotation,generate_augmented_data=args.generate_augmented_data)
 
         # self.features = args.features
-        self.chunk_size = args.chunk_size*args.framerate
-        self.receptive_field = args.receptive_field*args.framerate
+        self.chunk_size = args.chunk_size*args.fps
+        self.receptive_field = args.receptive_field*args.fps
         self.chunks_per_epoch = args.chunks_per_epoch
-        self.framerate = args.framerate
+        self.fps = args.fps
 
 
         if self.args.class_split == "alive":
             self.dict_event = EVENT_DICTIONARY_V2_ALIVE
-            self.K_parameters = args.K_parameters*args.framerate 
+            self.K_parameters = args.K_parameters*args.fps 
             self.num_classes = args.annotation_nr
         
-        self.num_detections = args.num_detections
         self.split=split
         
         # logging.info("Pre-compute clips")
@@ -159,7 +158,9 @@ class CALFData(Dataset):
             print("All -1 in clip_labels")
             
         # Get the spotting target
-        clip_targets = getTimestampTargets(np.array([clip_labels]), self.num_detections)[0]
+        # clip_targets = getTimestampTargets(np.array([clip_labels]), self.num_detections)[0]
+        clip_targets = getTargets(clip_labels, self.receptive_field, self.fps)
+        
         clip_representation = None
         clip_representation = copy.deepcopy(self.game_representation[game_index][start:start+self.chunk_size])
         cntr+=1
@@ -169,8 +170,6 @@ class CALFData(Dataset):
         return self.chunks_per_epoch
 
 def collateGCN(list_of_examples):
-    # data_list = [x[0] for x in list_of_examples]
-    # tensors = [x[1] for x in list_of_examples]
     return torch.stack([x[0] for x in list_of_examples], dim=0), \
             torch.stack([x[1] for x in list_of_examples], dim=0), \
             Batch.from_data_list([x for b in list_of_examples for x in b[2]])

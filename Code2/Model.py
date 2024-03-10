@@ -28,12 +28,12 @@ class ContextAwareModel(nn.Module):
         self.load_weights(weights=args.load_weights)
 
         # self.input_size = args.num_features
-        self.num_classes = num_classes
+        self.num_classes = args.annotation_nr
         self.dim_capsule = args.dim_capsule
-        self.receptive_field = args.receptive_field*args.framerate
-        self.num_detections = args.num_detections
-        self.chunk_size = args.chunk_size*args.framerate
-        self.framerate = args.framerate
+        self.receptive_field = args.receptive_field*args.fps
+        # self.num_detections = args.num_detections
+        self.chunk_size = args.chunk_size*args.fps
+        self.fps = args.fps
         self.input_channel = args.input_channel
 
         # -------------------------------
@@ -89,7 +89,6 @@ class ContextAwareModel(nn.Module):
         if "GCN" in self.args.backbone_player:
             r_concatenation = self.forward_GCN(representation_inputs)
             full_concatenation = r_concatenation
-
         # print(f"Concatenation size: {full_concatenation.size()}")
 
         # -------------------
@@ -181,7 +180,7 @@ class ContextAwareModel(nn.Module):
 
         # output_spotting = torch.cat((conf_pred,conf_class),dim=-1)
         # print("Output_spotting size: ", output_spotting.size())
-        #print(torch.cuda.memory_allocated()/10**9)
+        # print(torch.cuda.memory_allocated()/10**9)
 
 
         return output_segmentation
@@ -282,7 +281,7 @@ class ContextAwareModel(nn.Module):
         # BS = inputs.shape[0]
 
         # magic fix with zero padding
-        expected_size = BS* T
+        expected_size = BS * T
         x = torch.cat([x, torch.zeros(expected_size-x.shape[0], x.shape[1]).to(x.device)], 0)
 
         x = x.reshape(BS, T, x.shape[1]) #BSxTxFS
@@ -309,10 +308,10 @@ class BaseContextAwareModel(nn.Module):
         self.input_size = args.num_features
         self.num_classes = num_classes
         self.dim_capsule = args.dim_capsule
-        self.receptive_field = args.receptive_field*args.framerate
+        self.receptive_field = args.receptive_field*args.fps
         self.num_detections = args.num_detections
-        self.chunk_size = args.chunk_size*args.framerate
-        self.framerate = args.framerate
+        self.chunk_size = args.chunk_size*args.fps
+        self.fps = args.fps
         self.representation_width = args.dim_representation_w
         self.representation_height = args.dim_representation_h
         self.representation_channels = args.dim_representation_c

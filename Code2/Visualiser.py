@@ -39,17 +39,17 @@ class VisualiseDataset(Dataset):
         self.args = args
 
         if val:
-            DM = DataManager(files=listGames[11:12], framerate=args.framerate/25, alive=False)
+            DM = DataManager(files=listGames[11:12], framerate=args.fps/25, alive=False)
         else:
-            DM = DataManager(files=listGames[0:1], framerate=args.framerate/25, alive=False)
+            DM = DataManager(files=listGames[0:1], framerate=args.fps/25, alive=False)
         
         DM.read_games(ball_coords=True)
         DM.datasets[0].shape
         
-        self.receptive_field = int(args.receptive_field*args.framerate)
-        self.window = int(args.chunk_size*args.framerate - self.receptive_field)
+        self.receptive_field = int(args.receptive_field*args.fps)
+        self.window = int(args.chunk_size*args.fps - self.receptive_field)
         self.num_detections = int(args.num_detections)
-        self.chunk =  int(args.chunk_size * args.framerate)
+        self.chunk =  int(args.chunk_size * args.fps)
         self.chunk_counts = int(np.floor(
             (DM.datasets[0].shape[0]-self.chunk)/self.window))
         
@@ -93,16 +93,13 @@ class Visualiser():
         visualise_loader = torch.utils.data.DataLoader(data_visualise,
                             batch_size=args.batch_size, shuffle=False, collate_fn=collate_fn)
         
-        # concatenated_seg = np.empty((0, data_visualise.chunk, args.annotation_nr))
         if ann:
             concatenated_seg = np.ones((int(data_visualise.receptive_field/2), 1))
             annotations = np.zeros((int(data_visualise.receptive_field/2),len(ann_encoder)))
         else:
             concatenated_seg = np.ones((int(data_visualise.receptive_field/2),args.annotation_nr))
             annotations = np.zeros((int(data_visualise.receptive_field/2),args.annotation_nr))
-        # concatenated_spot = torch.zeros((int(data_visualise.receptive_field/2),args.annotation_nr+2))
         
-        # repeat_factor = data_visualise.chunk / data_visualise.num_detections
         for representation, annotation in visualise_loader:
             segmentation = model(representation)
             
@@ -110,30 +107,18 @@ class Visualiser():
             reshaped_seg = np.reshape(segmentation, (segmentation.shape[0]*segmentation.shape[1], segmentation.shape[2]))
             concatenated_seg = np.concatenate((concatenated_seg, reshaped_seg), axis=0)
             
-            # segmentation = segmentation.detach().numpy()
-            # concatenated_seg = np.concatenate((concatenated_seg, segmentation), axis=0)
-            # repeated_spot = np.repeat(spotting.detach().numpy(), repeat_factor, axis=1)
-            # spotting = np.array([x[int(data_visualise.receptive_field/2):-int(data_visualise.receptive_field/2)] for x in repeated_spot])
-            # reshaped_spot = np.reshape(spotting, (spotting.shape[0]*spotting.shape[1], spotting.shape[2]))
-            # concatenated_spot = np.concatenate((concatenated_spot, reshaped_spot), axis=0)
-            
             annotation = np.array([x[int(data_visualise.receptive_field/2):-int(data_visualise.receptive_field/2)] for x in annotation])
             reshaped_ann = np.reshape(annotation, (annotation.shape[0]*annotation.shape[1], annotation.shape[2]))
             annotations = np.concatenate((annotations, reshaped_ann), axis=0)
 
-        # concatenated_seg = average_segmentation(concatenated_seg, data_visualise.window)
-
         if smooth_rate:
             smooth_seg = int(np.floor(concatenated_seg.shape[0]/smooth_rate))
-            # smooth_spot = int(np.floor(concatenated_spot.shape[0]/args.framerate))
             smooth_ann = int(np.floor(annotations.shape[0]/smooth_rate))
             
             concatenated_seg = concatenated_seg[:smooth_seg*smooth_rate].reshape((smooth_seg, smooth_rate, args.annotation_nr)).mean(axis=1)
-            # concatenated_spot = concatenated_spot[:smooth_spot*args.framerate].reshape((smooth_spot, args.framerate, args.annotation_nr+2)).mean(axis=1)
             annotations = annotations[:smooth_ann*smooth_rate].reshape((smooth_ann, smooth_rate, args.annotation_nr)).max(axis=1)
 
         self.segmentation = 1-concatenated_seg
-        # self.spotting = concatenated_spot
         self.annotations = annotations
         self.args = args
         self.matrix = data_visualise.matrix
@@ -204,7 +189,7 @@ class Visualiser():
             scat_away.set_offsets(coords[frame,:,11:].T)
             scat_ball.set_offsets(ball_coords[frame])
             
-            if (self.smoothing) and (frame % self.args.framerate) == 0:
+            if (self.smoothing) and (frame % self.args.fps) == 0:
                 seg_pred[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.segmentation[:int(frame*smooth_rate)+1, ann_indx])
                 seg_ann[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.annotations[:int(frame*smooth_rate)+1, ann_indx])
             
