@@ -1,9 +1,15 @@
 PLAN:
--> Updated visualiser with edge attributes
--> Create the visualiser for spotting module
--> Train again the sgementation model
--> Train again the fine-tuned models
--> Potential improvement: apply weights in the ContextAwareLoss
+-> Grid Search to determine the best chunk size increase K-params for rare events,
+-> Train with weight loss,
+-> Train fine-tuned models,
+-> Prepare the metrics that will evaluate the segmentation module,
+-> Decide on error for annotations,
+
+-> Train these three models with the base spotting module, should the segmentation be frozen?
+-> Select the best one in terms of MAP score and use it to develop the spotting algorithm by adding 		some LSTM modules. 
+
+-> Train the model for one class to get the reference point
+
 
 
 

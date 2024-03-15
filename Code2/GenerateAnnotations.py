@@ -9,7 +9,7 @@ import pandas as pd
 def generate_annotations():
     framerate = 5
     total_frames = 20_000
-    error = 1
+    error = 2
 
     classes = ['Starting XI', 'Half Start', 'Pass', 'Carry', 'Ball Receipt*',
         'Pressure', 'Foul Won', 'Foul Committed', 'Interception',
@@ -144,6 +144,12 @@ def generate_annotations():
 if __name__ == '__main__':
     annotations = generate_annotations()
 
+# selected_classes = ['Pressure', 'Foul Committed', 'Ball Recovery', 'Duel', 'Shot', 'Dribble', 'Clearance', 'Goal Keeper', 'Pass']
+# selected_annotations_occurences = {ann: annotations.occurences[ann] for ann in selected_classes}
+# total_occs = np.sum(list(selected_annotations_occurences.values()))
+
+# weights_annotations = {ann: total_occs / val /1.6718522492144992 for ann, val in selected_annotations_occurences.items()}
+# weights_annotations.values()
 # from FileFinder import find_files
 # listGames = find_files("../football_games")
 # listGames[11]

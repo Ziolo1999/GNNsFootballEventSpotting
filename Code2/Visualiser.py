@@ -14,6 +14,8 @@ from mplsoccer.pitch import Pitch
 from sklearn.metrics import average_precision_score
 from helpers.classes import EVENT_DICTIONARY_V2_ALIVE as ann_encoder
 import pandas as pd
+import torch.nn.functional as F
+from scipy.stats import norm
 
 def collateVisGCN(list_of_examples):
     return Batch.from_data_list([x for b in list_of_examples for x in b[0]]),\
@@ -29,7 +31,6 @@ def average_segmentation(segmentation_results, window):
         exceeded_segmentation[index, index*window:index*window+segmentation_results.shape[1], :] = batch
     
     avg_segmentation = np.mean(exceeded_segmentation, axis=0, where=(exceeded_segmentation != 0))
-    # avg_segmentation =  np.nan_to_num(avg_segmentation)
     return avg_segmentation    
 
 class VisualiseDataset(Dataset):
@@ -48,7 +49,6 @@ class VisualiseDataset(Dataset):
         
         self.receptive_field = int(args.receptive_field*args.fps)
         self.window = int(args.chunk_size*args.fps - self.receptive_field)
-        self.num_detections = int(args.num_detections)
         self.chunk =  int(args.chunk_size * args.fps)
         self.chunk_counts = int(np.floor(
             (DM.datasets[0].shape[0]-self.chunk)/self.window))
@@ -67,8 +67,21 @@ class VisualiseDataset(Dataset):
             rows, cols = np.nonzero(DM.edges[0][frame])
             Edges = np.stack((rows, cols))
             edge_index = torch.tensor(Edges, dtype=torch.long)
+            
+            edge_attr = torch.tensor(
+                    [
+                        [
+                        DM.edges[0][frame][x, y],
+                        DM.velocity_diffs[0][frame][x, y],
+                        DM.acceleration_diffs[0][frame][x, y],
+                        DM.direction_diffs[0][frame][x, y]
+                        ] for x, y in zip(rows, cols)
+                    ], 
+                    dtype=torch.float
+                )
+            
             x = torch.tensor(Features, dtype=torch.float)
-            data = Data(x=x, edge_index=edge_index)
+            data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
             self.representation.append(data)
     
     def __getitem__(self,index):
@@ -85,7 +98,7 @@ class VisualiseDataset(Dataset):
         return int(self.chunk_counts)
 
 class Visualiser():
-    def __init__(self, collate_fn, args, model, smooth_rate=None, val=True, ann=None):   
+    def __init__(self, collate_fn, args, model, smooth_rate=None, val=True, ann=None, seg_model=True):   
         
         collate_fn = collate_fn
         data_visualise = VisualiseDataset(args=args, val=val)
@@ -95,35 +108,54 @@ class Visualiser():
         
         if ann:
             concatenated_seg = np.ones((int(data_visualise.receptive_field/2), 1))
+            concatenated_spot = np.zeros((int(data_visualise.receptive_field/2), 1))
             annotations = np.zeros((int(data_visualise.receptive_field/2),len(ann_encoder)))
         else:
             concatenated_seg = np.ones((int(data_visualise.receptive_field/2),args.annotation_nr))
+            concatenated_spot = np.zeros((int(data_visualise.receptive_field/2),args.annotation_nr))
             annotations = np.zeros((int(data_visualise.receptive_field/2),args.annotation_nr))
         
         for representation, annotation in visualise_loader:
-            segmentation = model(representation)
+            model_output = model(representation)
             
-            segmentation = np.array([x[int(data_visualise.receptive_field/2):-int(data_visualise.receptive_field/2)] for x in segmentation.detach().numpy()])
-            reshaped_seg = np.reshape(segmentation, (segmentation.shape[0]*segmentation.shape[1], segmentation.shape[2]))
-            concatenated_seg = np.concatenate((concatenated_seg, reshaped_seg), axis=0)
-            
-            annotation = np.array([x[int(data_visualise.receptive_field/2):-int(data_visualise.receptive_field/2)] for x in annotation])
-            reshaped_ann = np.reshape(annotation, (annotation.shape[0]*annotation.shape[1], annotation.shape[2]))
-            annotations = np.concatenate((annotations, reshaped_ann), axis=0)
+            if seg_model:
+                segmentation = np.array([x[int(data_visualise.receptive_field/2):-int(data_visualise.receptive_field/2)] for x in model_output.detach().numpy()])
+                reshaped_seg = np.reshape(segmentation, (segmentation.shape[0]*segmentation.shape[1], segmentation.shape[2]))
+                concatenated_seg = np.concatenate((concatenated_seg, reshaped_seg), axis=0)
 
-        if smooth_rate:
-            smooth_seg = int(np.floor(concatenated_seg.shape[0]/smooth_rate))
-            smooth_ann = int(np.floor(annotations.shape[0]/smooth_rate))
-            
-            concatenated_seg = concatenated_seg[:smooth_seg*smooth_rate].reshape((smooth_seg, smooth_rate, args.annotation_nr)).mean(axis=1)
-            annotations = annotations[:smooth_ann*smooth_rate].reshape((smooth_ann, smooth_rate, args.annotation_nr)).max(axis=1)
+                annotation = np.array([x[int(data_visualise.receptive_field/2):-int(data_visualise.receptive_field/2)] for x in annotation])
+                reshaped_ann = np.reshape(annotation, (annotation.shape[0]*annotation.shape[1], annotation.shape[2]))
+                annotations = np.concatenate((annotations, reshaped_ann), axis=0)
+            else:
+                model_output = F.sigmoid(model_output)
+                spotting = np.array([x for x in model_output.detach().numpy()])
+                reshaped_spot = np.reshape(spotting, (spotting.shape[0]*spotting.shape[1], spotting.shape[2]))
+                concatenated_spot = np.concatenate((concatenated_spot, reshaped_spot), axis=0)
 
-        self.segmentation = 1-concatenated_seg
+                annotation = np.array([x[int(data_visualise.receptive_field/2):-int(data_visualise.receptive_field/2)] for x in annotation])
+                reshaped_ann = np.reshape(annotation, (annotation.shape[0]*annotation.shape[1], annotation.shape[2]))
+                smoothed_ann = np.reshape(reshaped_ann, (-1, args.fps, reshaped_ann.shape[1])).max(axis=1)
+                annotations = np.concatenate((annotations, smoothed_ann), axis=0)
+                
+
+        # if smooth_rate:
+        #     smooth_seg = int(np.floor(concatenated_seg.shape[0]/smooth_rate))
+        #     smooth_ann = int(np.floor(annotations.shape[0]/smooth_rate))
+            
+        #     concatenated_seg = concatenated_seg[:smooth_seg*smooth_rate].reshape((smooth_seg, smooth_rate, args.annotation_nr)).mean(axis=1)
+        #     annotations = annotations[:smooth_ann*smooth_rate].reshape((smooth_ann, smooth_rate, args.annotation_nr)).max(axis=1)
+
+        
         self.annotations = annotations
+        self.spotting = concatenated_spot
+        self.segmentation = 1-concatenated_seg
+        self.segmentation = self.segmentation[:self.annotations.shape[0],:]
+        
         self.args = args
         self.matrix = data_visualise.matrix
         self.ball_coords = data_visualise.ball_coords[0]
         self.smooth_rate = smooth_rate 
+        self.seg_model = seg_model
 
     def visualize(self, frame_threshold=None, save_dir=None, interval=1, annotation="Shot"):
         pitch = Pitch(pitch_color='grass', line_color='white', stripe=True)
@@ -138,7 +170,7 @@ class Visualiser():
         ball_coords[:,1] = ball_coords[:,1]*scalars[1]
 
         # create base animation
-        fig, (ax1, ax2) = plt.subplots(3, 1, figsize=(10, 10))
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
         pitch.draw(ax=ax1)
         
         # create an empty collection for edges
@@ -160,27 +192,28 @@ class Visualiser():
 
         ann_indx = ann_encoder[annotation]
 
-        seg_pred = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),ann_indx], label='Predictions')
-        seg_ann = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_indx], label='Annotations')
-        ax2.set_title(f"Segmentation")
-        ax2.legend()
+        if self.seg_model:
+            predictions = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),ann_indx], label='Predictions')
+            ax2.set_title(f"Segmentation")
+        else:
+            predictions = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),ann_indx], label='Predictions')
+            ax2.set_title(f"Spotting")
 
-        # Spotting plot
-        # spot_pred = ax3.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),2+ann_indx], label='Predictions')
-        # spot_ann = ax3.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_indx], label='Annotations')
-        # ax3.set_title(f"Spotting")
-        # ax3.legend()
+        seg_ann = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_indx], label='Annotations')
+        ax2.legend()
 
         def init():
             scat_home.set_offsets(np.array([]).reshape(0, 2))
             scat_away.set_offsets(np.array([]).reshape(0, 2))
             scat_ball.set_offsets(np.array([]).reshape(0, 2))
             
-            seg_pred[0].set_data(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),ann_indx])
+            if self.seg_model:
+                predictions[0].set_data(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),ann_indx])
+            else:
+                predictions[0].set_data(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),ann_indx])
+
             seg_ann[0].set_data(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_indx])
             
-            # spot_pred[0].set_data(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),2+ann_indx])
-            # spot_ann[0].set_data(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_indx])
             return (scat_home,scat_away,scat_ball)
         
         # get update function
@@ -189,16 +222,20 @@ class Visualiser():
             scat_away.set_offsets(coords[frame,:,11:].T)
             scat_ball.set_offsets(ball_coords[frame])
             
-            if (self.smoothing) and (frame % self.args.fps) == 0:
-                seg_pred[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.segmentation[:int(frame*smooth_rate)+1, ann_indx])
-                seg_ann[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.annotations[:int(frame*smooth_rate)+1, ann_indx])
+            # if (self.smoothing) and (frame % self.args.fps) == 0:
+            #     seg_pred[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.segmentation[:int(frame*smooth_rate)+1, ann_indx])
+            #     seg_ann[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.annotations[:int(frame*smooth_rate)+1, ann_indx])
             
                 # spot_pred[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.spotting[:int(frame*smooth_rate)+1, 2+ann_indx])
                 # spot_ann[0].set_data(np.arange(0, int(frame*smooth_rate) + 1), self.annotations[:int(frame*smooth_rate)+1, ann_indx])
             
-            elif self.smoothing == False:
-                seg_pred[0].set_data(np.arange(0, frame + 1), self.segmentation[:frame+1, ann_indx])
-                seg_ann[0].set_data(np.arange(0, frame + 1), self.annotations[:frame+1, ann_indx])
+            # elif self.smoothing == False:
+            if self.seg_model:
+                predictions[0].set_data(np.arange(0, frame + 1), self.segmentation[:frame+1, ann_indx])
+            else:
+                predictions[0].set_data(np.arange(0, frame + 1), self.spotting[:frame+1, ann_indx])
+            
+            seg_ann[0].set_data(np.arange(0, frame + 1), self.annotations[:frame+1, ann_indx])
                 
                 # spot_pred[0].set_data(np.arange(0, frame + 1), self.spotting[:frame+1, 2+ann_indx])
                 # spot_ann[0].set_data(np.arange(0, frame + 1), self.annotations[:frame+1, ann_indx])
@@ -245,34 +282,43 @@ class Visualiser():
             for i, ax in enumerate(axes.flatten()):
                 ann = list(ann_encoder.keys())[i]
                 seg_ann = ax.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),i], label='Annotations')
-                seg_pred = ax.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),i], label='Prediction')
-                ax.set_title(f"Segmentation {ann}")
+                
+                if self.seg_model:
+                    predictions = ax.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),i], label='Prediction')
+                    ax.set_title(f"Segmentation {ann}")
+                else:
+                    predictions = ax.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),i], label='Prediction')
+                    ax.set_title(f"Spotting {ann}")
                 ax.legend()
         else:
             fig, axes = plt.subplots(1, 1, figsize=(10, 10))
             ann_index = ann_encoder[annotation]
             axes.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_index], label='Annotations')
-            axes.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),0], label='Prediction')
-            axes.set_title(f"Segmentation {ann_index}")
+            
+            if self.seg_model:
+                axes.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.segmentation[:int(frame_threshold*smooth_rate),0], label='Prediction')
+                axes.set_title(f"Segmentation {ann_index}")
+            else:
+                axes.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.spotting[:int(frame_threshold*smooth_rate),0], label='Prediction')
+                axes.set_title(f"Spotting {ann_index}")
+
             axes.legend()
 
-        # Draw spotting plots
-        # spot_pred = ax2.plot(np.arange(0, int(frame_threshold*smooths_rate)), self.spotting[:int(frame_threshold*smooth_rate),2+ann_indx], label='Prediction')
-        # spot_ann = ax2.plot(np.arange(0, int(frame_threshold*smooth_rate)), self.annotations[:int(frame_threshold*smooth_rate),ann_indx], label='Annotations')
-        # ax2.set_title(f"Spotting")
-        # ax2.legend()
-
-        # if save_dir != None:
-        #     plt.savefig(save_dir)
-        # else:
-        #     plt.show()
+        if save_dir != None:
+            plt.savefig(save_dir)
+        else:
+            plt.show()
         return fig, axes
     
     def calculate_MAP(self):
         
         mAP_results = np.empty((self.annotations.shape[1]+1))
         
-        predictions = self.segmentation
+        if self.seg_model:
+            predictions = self.segmentation
+        else:
+            predictions = self.spotting
+
         if predictions.shape[0] != self.annotations.shape[0]:
             predictions = predictions[:self.annotations.shape[0],:]
         
@@ -288,3 +334,49 @@ class Visualiser():
         # col_names = ["Total"]+list(ann_encoder.keys())
         # mAP_df = pd.DataFrame(mAP_results, columns=col_names)
         return mAP_results
+    
+    def norm_evaluation_segmentation(self):
+        precisions = np.zeros(self.annotations.shape[1])
+        recalls = np.zeros(self.annotations.shape[1])
+        f1_scores = np.zeros(self.annotations.shape[1])
+        total_targets = np.zeros(self.annotations.shape)
+        # fig, axes = plt.subplots(5, 2, figsize=(25, 10))
+
+        for ann in range(self.annotations.shape[1]):
+            
+            K_param = self.args.K_parameters[3,ann].item()/2*self.args.fps
+            sigma = K_param/4
+            scaler = K_param * 5/8 * 0.9
+
+            events = np.where(self.annotations[:,ann]==1)[0]
+
+            frames = np.arange(0, self.annotations.shape[0])
+            event_distribution = np.ones((len(frames), len(events))) * 0.1
+
+            # Calculate the maximum distribution value at each x
+            for i, event in enumerate(events):
+                event_distribution[:,i] = norm.pdf(frames, event, sigma)
+            
+            # Get final targets
+            target = np.max(event_distribution, axis=1) * scaler
+            total_targets[:,ann] = target
+
+            # Get predictions
+            predictions = self.segmentation[:self.annotations.shape[0], ann]
+            
+            # Get evaluation metrics
+            TP = np.sum(np.minimum(predictions, target))  # Overlap
+            FP = np.sum(predictions - np.minimum(predictions, target))  # Excess in predicted
+            FN = np.sum(target - np.minimum(predictions, target))  # Shortfall in actual
+
+            precision = TP / (TP + FP)
+            recall = TP / (TP + FN)
+            f1_score = 2 * (precision * recall) / (precision + recall)
+
+            precisions[ann] = precision
+            recalls[ann] = recall
+            f1_scores[ann] = f1_score
+
+
+        return precisions, recalls, f1_scores, total_targets 
+
