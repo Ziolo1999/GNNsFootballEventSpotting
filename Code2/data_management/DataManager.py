@@ -1,25 +1,50 @@
 # Code used by all notebooks
-import os
-from DataPreprocessing import DatasetPreprocessor
-from FileFinder import MatchFile, find_files
+
+from data_management.DataPreprocessing import DatasetPreprocessor
+from data_management.FileFinder import MatchFile, find_files
+
 from typing import Union
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
 import logging
-from torch_geometric.data import Data
-from torch.utils.data import Dataset
 import numpy as np
 import random
 import os
-import torch
 import logging
+from scipy.stats import norm
+
 from helpers.classes import EVENT_DICTIONARY_V2_ALIVE
-from helpers.preprocessing import oneHotToShifts, getTimestampTargets, getChunks_anchors, getTargets
+from helpers.preprocessing import oneHotToShifts, getTimestampTargets, getChunks_anchors, getTargets, generate_artificial_targets
+
+import torch
+from torch.utils.data import Dataset
 from torch_geometric.data import Data
 from torch_geometric.data import Batch
+
 import copy
 from dataclasses import dataclass
+
+
+def generate_artificial_targets(annotations, Ks):
+    nb_frames = annotations.shape[0]
+    nb_actions = annotations.shape[1]
+
+    sigma = Ks/4
+    scaler = Ks * 5/8
+
+    events = list(zip(np.where(annotations==1)))
+    targets_holder = np.zeros((nb_frames, nb_frames, nb_actions))
+    frame_array = np.arange(nb_frames)
+
+    # Generate distributions
+    for frame, event in enumerate(events):
+        targets_holder[:,frame, event] = norm.pdf(frame_array, event, sigma)
+    
+    # Get final targets
+    targets = np.max(targets_holder, axis=1) * scaler
+    
+    return targets
     
 class CALFData(Dataset):
     def __init__(self, split="train", args=None): 
@@ -43,7 +68,8 @@ class CALFData(Dataset):
         elif split == "validate":
             DM = DataManager(files=self.listGames[10:12], framerate=args.fps/25, alive=False)
         
-        DM.read_games(focused_annotation=args.focused_annotation,generate_augmented_data=args.generate_augmented_data)
+        DM.read_games(focused_annotation=args.focused_annotation, 
+                      generate_augmented_data=args.generate_augmented_data)
 
         # self.features = args.features
         self.chunk_size = args.chunk_size*args.fps
@@ -64,6 +90,7 @@ class CALFData(Dataset):
         self.game_representation = list()
         self.game_anchors = list()
         self.game_size = list()
+        self.artificial_targets = list()
 
         for i in np.arange(self.num_classes+1):
             self.game_anchors.append(list())
@@ -75,10 +102,13 @@ class CALFData(Dataset):
             # calculate anchors
             anchors = getChunks_anchors(shifts, game_counter, self.K_parameters.numpy(), self.chunk_size, self.receptive_field)
             game_counter = game_counter+1
-            
+            # Generate artificial_targets
+            if self.args.generate_artificial_targets:
+                self.artificial_targets.append(generate_artificial_targets(DM.annotations[game_indx], self.K_parameters[3,:].numpy()))
             # Generate pytorch-geometrics Data
             representation = []
             for frame in range(DM.datasets[game_indx].shape[0]):
+                
                 # Get nodes features
                 Features = DM.datasets[game_indx][frame].T
                 x = torch.tensor(Features, dtype=torch.float)
@@ -143,12 +173,14 @@ class CALFData(Dataset):
         # Compute the shift for event chunks
         # TODO: Decide about shift depends on the results of the model
         shift = np.random.randint(-self.chunk_size+self.receptive_field, -self.receptive_field)
-        if self.args.focused_annotation:
-            if random.random()<0.5:
-                shift = -self.chunk_size
+
         # shift = np.random.randint(-self.chunk_size, 0)
         start = anchor + shift
-        # Extract the clips
+        if self.args.focused_annotation:
+            if random.random()<0.5:
+                start = random.randint(0, len(self.game_labels[game_index])-self.chunk_size)
+        
+        # Extract the clips 
         clip_labels = copy.deepcopy(self.game_labels[game_index][start:start+self.chunk_size])
 
         # Put loss to zero outside receptive field
@@ -157,9 +189,11 @@ class CALFData(Dataset):
         if np.all(clip_labels == -1):
             print("All -1 in clip_labels")
             
-        # Get the spotting target
-        # clip_targets = getTimestampTargets(np.array([clip_labels]), self.num_detections)[0]
-        clip_targets = getTargets(clip_labels, self.receptive_field, self.fps)
+        # Get the targets
+        if self.args.generate_artificial_targets:
+            clip_targets = self.artificial_targets[game_index][start:start+self.chunk_size,:]
+        else:
+            clip_targets = getTargets(clip_labels, self.receptive_field, self.fps)
         
         clip_representation = None
         clip_representation = copy.deepcopy(self.game_representation[game_index][start:start+self.chunk_size])

@@ -1,5 +1,5 @@
-from DataManager import DataManager
-from FileFinder import find_files
+from data_management.DataManager import DataManager
+from data_management.FileFinder import find_files
 import numpy as np
 import torch 
 import copy
@@ -7,7 +7,6 @@ from torch_geometric.data import Data
 from torch_geometric.data import Batch
 from torch.utils.data import Dataset
 import matplotlib.animation as animation
-from mplsoccer.pitch import Pitch
 from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt
 from mplsoccer.pitch import Pitch
@@ -335,34 +334,39 @@ class Visualiser():
         # mAP_df = pd.DataFrame(mAP_results, columns=col_names)
         return mAP_results
     
-    def norm_evaluation_segmentation(self):
-        precisions = np.zeros(self.annotations.shape[1])
-        recalls = np.zeros(self.annotations.shape[1])
-        f1_scores = np.zeros(self.annotations.shape[1])
-        total_targets = np.zeros(self.annotations.shape)
-        # fig, axes = plt.subplots(5, 2, figsize=(25, 10))
+    def norm_evaluation_segmentation(self, ann=None):
+        if ann:
+            annotations = self.annotations[:, ann_encoder[ann]].reshape(-1,1)
+        else:
+            annotations = self.annotations
 
-        for ann in range(self.annotations.shape[1]):
+        precisions = np.zeros(annotations.shape[1])
+        recalls = np.zeros(annotations.shape[1])
+        f1_scores = np.zeros(annotations.shape[1])
+        total_targets = np.zeros(annotations.shape)
+
+        for ann in range(annotations.shape[1]):
             
             K_param = self.args.K_parameters[3,ann].item()/2*self.args.fps
             sigma = K_param/4
-            scaler = K_param * 5/8 * 0.9
+            scaler = K_param * 5/8 
 
-            events = np.where(self.annotations[:,ann]==1)[0]
+            events = np.where(annotations[:,ann]==1)[0]
 
-            frames = np.arange(0, self.annotations.shape[0])
-            event_distribution = np.ones((len(frames), len(events))) * 0.1
+            frames = np.arange(0, annotations.shape[0])
+            event_distribution = np.zeros((len(frames), len(events))) 
 
             # Calculate the maximum distribution value at each x
             for i, event in enumerate(events):
-                event_distribution[:,i] = norm.pdf(frames, event, sigma)
+                event_distribution[:,i] = norm.pdf(frames, event, sigma) * scaler
             
             # Get final targets
-            target = np.max(event_distribution, axis=1) * scaler
+            # event_distribution = np.concatenate((event_distribution, np.ones((event_distribution.shape[0], 1)) * 0.1), axis=1)
+            target = np.max(event_distribution, axis=1) 
             total_targets[:,ann] = target
 
             # Get predictions
-            predictions = self.segmentation[:self.annotations.shape[0], ann]
+            predictions = self.segmentation[:annotations.shape[0], ann]
             
             # Get evaluation metrics
             TP = np.sum(np.minimum(predictions, target))  # Overlap
@@ -379,4 +383,112 @@ class Visualiser():
 
 
         return precisions, recalls, f1_scores, total_targets 
+    
+# from dataclasses import dataclass
+# from helpers.classes import get_K_params
+# @dataclass
+# class Args:
+#     receptive_field = 12
+#     fps = 5
+#     chunks_per_epoch = 1824
+#     class_split = "alive"
+#     chunk_size = 60
+#     batch_size = 32
+#     input_channel = 13
+#     feature_multiplier=1
+#     backbone_player = "GCN"
+#     max_epochs=180
+#     load_weights=None
+#     model_name="Testing_Model"
+#     dim_capsule=16
+#     lambda_coord=5.0
+#     lambda_noobj=0.5
+#     patience=25
+#     LR=1e-03
+#     GPU=0 
+#     max_num_worker=1
+#     loglevel='INFO'
+#     annotation_nr = 10
+#     K_parameters = get_K_params(chunk_size)
+#     focused_annotation = None
+#     generate_augmented_data = True
+#     sgementation_path = "models/gridsearch5.pth.tar"
+#     freeze_model = True
 
+# args = Args
+# collate_fn = collateVisGCN
+# model_path = "models/gridsearch5.pth.tar"
+# model = torch.load(model_path)
+# visualiser = Visualiser(collate_fn, args, model, smooth_rate=None, val=False)
+# # precisions, recalls, f1_scores, total_targets = visualiser.norm_evaluation_segmentation()
+
+# # plt.plot(total_targets[:, 8])
+# # plt.plot(visualiser.segmentation[:,8])
+# # plt.fill_between(np.arange(0,total_targets.shape[0]), np.minimum(total_targets[:, 8], visualiser.segmentation[:,8]), alpha=0.8)
+# # plt.show()
+
+# import cv2
+# prediction_fps = 5
+
+# video_path = '../football_games/BelgiumBrasil.mp4'
+# capture = cv2.VideoCapture(video_path)
+# kick_off = 3*60 + 21
+# capture.set(cv2.CAP_PROP_POS_MSEC, kick_off * 1000)
+# fps = capture.get(cv2.CAP_PROP_FPS)
+# total_frames = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+
+
+# prediction_fps = 5
+# frame_threshold = 1000
+# update_interval_prediction = int(fps / prediction_fps)
+
+# # create base animation
+# fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+
+
+# predictions = ax2.plot(np.arange(0, int(frame_threshold)), visualiser.annotations[:int(frame_threshold),8], label='Predictions')
+# x_time = np.arange(visualiser.annotations.shape[0]) / (prediction_fps*60)
+
+# ax2.set_title(f"Segmentation")
+# # np.where(visualiser.annotations[:int(frame_threshold),8]==1)
+# def init():
+#     predictions[0].set_data(np.arange(0, int(frame_threshold)), visualiser.annotations[:int(frame_threshold),8])
+
+
+# # get update function
+# def update(frame):
+#     ret, video_frame = capture.read()
+#     if not ret:
+#         print("Failed to grab frame.")
+#         return
+#     ax1.imshow(cv2.cvtColor(video_frame, cv2.COLOR_BGR2RGB))
+
+#     adjusted_frame = frame // update_interval_prediction
+#     beginning = int(np.max([adjusted_frame+1-1500, 0]))
+#     predictions[0].set_data(x_time[beginning : adjusted_frame+1], visualiser.annotations[beginning:adjusted_frame+1, 8])
+#     ax2.set_xlim(x_time[beginning], x_time[adjusted_frame+1])
+
+# # use animation 
+# ani = animation.FuncAnimation(fig=fig, func=update, frames=frame_threshold, init_func=init, interval=1)
+
+# ani.save("animations/Predictions.mp4", writer='ffmpeg') 
+# plt.show()
+# capture.release()
+
+
+# from data_management.DataPreprocessing import DatasetPreprocessor
+# from data_management.FileFinder import find_files
+
+# f = find_files("../football_games")[0]
+# dataset = DatasetPreprocessor(1/5, f.name, alive=False)
+# dataset._open_dataset(f.datafile, f.metafile, f.annotatedfile)
+
+# # Generates node features
+# player_violation = dataset._generate_node_features()
+
+# # Generate edges and synchronise annotations
+# dataset._generate_edges(threshold=None)
+# dataset._synchronize_annotations(focused_annotation=None)
+
+
+# dataset.animate_game(edge_threshold=None, direction=False, frame_threshold=1000, save_dir="animations/ShotSynchronisation.mp4", interval=200, annotation="Shot")

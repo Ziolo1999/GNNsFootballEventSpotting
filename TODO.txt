@@ -11,7 +11,7 @@ PLAN:
 -> Train the model for one class to get the reference point
 
 
-
+-> Add event distributions based on the place on the field 
 
 
 

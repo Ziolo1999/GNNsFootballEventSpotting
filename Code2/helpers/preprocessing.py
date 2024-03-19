@@ -12,6 +12,29 @@ def unproject_image_point(homography, point2D):
     pitchpoint = pitchpoint/pitchpoint[2]
     return pitchpoint
 
+def generate_artificial_targets(annotations, Ks):
+    nb_frames = annotations.shape[0]
+    nb_actions = annotations.shape[1]
+    total_targets = np.zeros(annotations.shape)
+    
+    Ks = Ks.detach().numpy()
+    sigma = Ks/4
+    scaler = Ks * 5/8
+    for ann in range(annotations.shape[1]):
+        events = np.where(annotations[:, ann]==1)[0]
+        target_holder = np.zeros((nb_frames, len(events)))
+        frame_array = np.arange(nb_frames)
+        
+        # Generate distributions
+        for i, event in enumerate(events):
+            target_holder[:,i] = norm.pdf(frame_array, event, sigma[ann])
+        
+        # Get final targets
+        targets = np.max(target_holder, axis=1) * scaler[ann]
+        total_targets[:,ann] = targets
+    
+    return total_targets
+
 def meter2radar(point2D, dim_terrain, dim_image):
     return np.array([int(dim_image[1]*((0.95*point2D[0]/dim_terrain[1])+0.5+0.025)), int(dim_image[0]*((0.95*point2D[1]/dim_terrain[0])+0.5+0.025)), 1])
 
