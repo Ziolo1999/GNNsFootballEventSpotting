@@ -1,13 +1,17 @@
-from DataManager import CALFData, collateGCN
+import sys
+import os
+sys.path.append(os.path.abspath('.'))
+
+from data_management.DataManager import CALFData, collateGCN
 import numpy as np
 import torch 
 from Model import ContextAwareModel
 from helpers.loss import ContextAwareLoss, SpottingLoss
-from train import trainer
+from modules.train import trainer
 import pickle
 from dataclasses import dataclass
 import matplotlib.pyplot as plt
-from Visualiser import collateVisGCN, Visualiser
+from modules.Visualiser import collateVisGCN, Visualiser
 from helpers.evaluation import segmentation_correlation
 from helpers.classes import EVENT_DICTIONARY_V2_ALIVE as event_enc
 from helpers.classes import get_K_params

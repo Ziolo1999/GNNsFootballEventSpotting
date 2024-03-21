@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.abspath('.'))
+
 import numpy as np
 import torch 
 from helpers.loss import ContextAwareLoss
@@ -9,6 +13,7 @@ import torch.nn.functional as F
 from matplotlib.animation import FuncAnimation
 from matplotlib.patches import Rectangle
 import matplotlib.colors as mcolors
+
 
 def animate_loss_impact(data, save_dir:str):
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -178,9 +183,11 @@ def main():
     class BasicModel(nn.Module):
         def __init__(self, num_classes=300, args=None):
             super(BasicModel, self).__init__()
-            self.linear = nn.Linear(in_features=num_classes, out_features=num_classes)
+            self.linear1 = nn.Linear(in_features=num_classes, out_features=num_classes)
+            self.linear2 = nn.Linear(in_features=num_classes, out_features=num_classes)
         def forward(self, x):
-            x = self.linear(x)
+            x = self.linear1(x)
+            x = self.linear2(x)
             x = F.sigmoid(x)
             return x.reshape((1,300,1))
     
@@ -190,11 +197,11 @@ def main():
     model = BasicModel()
     criterion = ContextAwareLoss(K=K)
     device = torch.device("cpu")
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, 
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0005, 
                                 betas=(0.9, 0.999), eps=1e-07, 
                                 weight_decay=0, amsgrad=False)
     # Train
-    for _  in range(200):
+    for _  in range(100):
         output = model(features)
         loss = criterion(labels, output, device) 
         optimizer.zero_grad()
