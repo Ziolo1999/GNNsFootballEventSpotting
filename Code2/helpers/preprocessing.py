@@ -6,6 +6,7 @@ import matplotlib.animation as animation
 from mplsoccer.pitch import Pitch
 from matplotlib.collections import LineCollection
 from helpers.classes import EVENT_DICTIONARY_V2_ALIVE as classes_enc
+from scipy.stats import norm
 
 def unproject_image_point(homography, point2D):
     pitchpoint = homography @ point2D

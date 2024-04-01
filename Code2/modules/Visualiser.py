@@ -39,9 +39,9 @@ class VisualiseDataset(Dataset):
         self.args = args
 
         if val:
-            DM = DataManager(files=listGames[11:12], framerate=args.fps/25, alive=False)
-        else:
             DM = DataManager(files=listGames[0:1], framerate=args.fps/25, alive=False)
+        else:
+            DM = DataManager(files=listGames[11:12], framerate=args.fps/25, alive=False)
         
         DM.read_games(ball_coords=True)
         DM.datasets[0].shape
@@ -63,21 +63,22 @@ class VisualiseDataset(Dataset):
             # Get nodes features
             Features = DM.datasets[0][frame].T
             # Get edges indicses
-            rows, cols = np.nonzero(DM.edges[0][frame])
+            rows, cols = np.nonzero(DM.edge_weights[0][frame])
             Edges = np.stack((rows, cols))
             edge_index = torch.tensor(Edges, dtype=torch.long)
             
             edge_attr = torch.tensor(
+                [
                     [
-                        [
-                        DM.edges[0][frame][x, y],
-                        DM.velocity_diffs[0][frame][x, y],
-                        DM.acceleration_diffs[0][frame][x, y],
-                        DM.direction_diffs[0][frame][x, y]
-                        ] for x, y in zip(rows, cols)
-                    ], 
-                    dtype=torch.float
-                )
+                    DM.distances[0][frame][x, y],
+                    DM.velocity_diffs[0][frame][x, y],
+                    DM.acceleration_diffs[0][frame][x, y],
+                    DM.direction_diffs[0][frame][x, y],
+                    DM.edge_weights[0][frame][x, y]
+                    ] for x, y in zip(rows, cols)
+                ], 
+                dtype=torch.float
+            )
             
             x = torch.tensor(Features, dtype=torch.float)
             data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
@@ -100,6 +101,7 @@ class Visualiser():
     def __init__(self, collate_fn, args, model, smooth_rate=None, val=True, ann=None, seg_model=True):   
         
         collate_fn = collate_fn
+        model.eval()
         data_visualise = VisualiseDataset(args=args, val=val)
         
         visualise_loader = torch.utils.data.DataLoader(data_visualise,
@@ -147,7 +149,10 @@ class Visualiser():
         
         self.annotations = annotations
         self.spotting = concatenated_spot
-        self.segmentation = 1-concatenated_seg
+        if args.generate_artificial_targets is not True:
+            self.segmentation = 1-concatenated_seg
+        else:
+            self.segmentation = concatenated_seg
         self.segmentation = self.segmentation[:self.annotations.shape[0],:]
         
         self.args = args

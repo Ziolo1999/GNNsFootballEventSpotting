@@ -7,11 +7,13 @@ import warnings
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn import Linear, Sequential, BatchNorm1d, ReLU, Dropout
 
 from torch_geometric.nn.conv import EdgeConv, DynamicEdgeConv
-from torch_geometric.nn.conv import GCNConv
+from torch_geometric.nn.conv import GCNConv, GATConv, GINConv, GATv2Conv
+from torch_geometric.nn.models import GAT, GIN, GCN
 from torch_geometric.nn import GENConv, DeepGCNLayer
-from torch_geometric.nn import global_max_pool
+from torch_geometric.nn import global_max_pool, global_mean_pool
 
 
 class ContextAwareModel(nn.Module):
@@ -39,9 +41,7 @@ class ContextAwareModel(nn.Module):
         # -------------------------------
         # Initialize the player backbone
         # -------------------------------
-
-        if "GCN" in self.args.backbone_player:
-            self.init_GCN(multiplier=2*self.args.feature_multiplier)
+        self.init_GNN(multiplier=2*self.args.feature_multiplier)
 
         # -------------------
         # Segmentation module
@@ -85,10 +85,8 @@ class ContextAwareModel(nn.Module):
         # -----------------------------------
         # Feature input (chunks of the video)
         # -----------------------------------
-        
-        if "GCN" in self.args.backbone_player:
-            r_concatenation = self.forward_GCN(representation_inputs)
-            full_concatenation = r_concatenation
+        r_concatenation = self.forward_GNN(representation_inputs)
+        full_concatenation = r_concatenation
         # print(f"Concatenation size: {full_concatenation.size()}")
 
         # -------------------
@@ -185,7 +183,7 @@ class ContextAwareModel(nn.Module):
 
         return output_segmentation
 
-    def init_GCN(self,multiplier=1):
+    def init_GNN(self,multiplier=1):
 
         # ---------------------
         # Representation branch
@@ -194,24 +192,47 @@ class ContextAwareModel(nn.Module):
         input_channel = self.input_channel
         # print("input_channel", input_channel)
         
-            
         if self.args.backbone_player == "GCN":
-            self.r_conv_1 = GCNConv(input_channel, 8*multiplier)
-            self.r_conv_2 = GCNConv(8*multiplier, 16*multiplier)
-            self.r_conv_3 = GCNConv(16*multiplier, 32*multiplier)
-            self.r_conv_4 = GCNConv(32*multiplier, 76*multiplier)
-
+            self.r_graph_1 = GCNConv(input_channel, 8*multiplier)
+            self.r_graph_2 = GCNConv(8*multiplier, 16*multiplier)
+            self.r_graph_3 = GCNConv(16*multiplier, 32*multiplier)
+            self.r_graph_4 = GCNConv(32*multiplier, 76*multiplier)
+        elif self.args.backbone_player == "GAT":
+            self.r_graph_1 = GATConv(input_channel, 8*multiplier, heads=4, concat=False)
+            self.r_graph_2 = GATConv(8*multiplier, 16*multiplier, heads=4, concat=False)
+            self.r_graph_3 = GATConv(16*multiplier, 32*multiplier, heads=4, concat=False)
+            self.r_graph_4 = GATConv(32*multiplier, 76*multiplier, heads=4, concat=False)
+        elif self.args.backbone_player == "GIN":
+            self.r_graph_1 = GINConv(
+                                    Sequential(Linear(input_channel,  8*multiplier),
+                                    BatchNorm1d(8*multiplier), ReLU(),
+                                    Linear(8*multiplier, 8*multiplier), ReLU())
+                                    )
+            self.r_graph_2 = GINConv(
+                                    Sequential(Linear(8*multiplier,  16*multiplier),
+                                    BatchNorm1d(16*multiplier), ReLU(),
+                                    Linear(16*multiplier, 16*multiplier), ReLU())
+                                    )
+            self.r_graph_3 = GINConv(
+                                    Sequential(Linear(16*multiplier,  32*multiplier),
+                                    BatchNorm1d(32*multiplier), ReLU(),
+                                    Linear(32*multiplier, 32*multiplier), ReLU())
+                                    )
+            self.r_graph_4 = GINConv(
+                                    Sequential(Linear(32*multiplier,  76*multiplier),
+                                    BatchNorm1d(76*multiplier), ReLU(),
+                                    Linear(76*multiplier, 76*multiplier), ReLU())
+                                    )
         elif self.args.backbone_player == "EdgeConvGCN":
-            self.r_conv_1 = EdgeConv(torch.nn.Sequential(*[nn.Linear(2*input_channel, 8*multiplier) ]))
-            self.r_conv_2 = EdgeConv(torch.nn.Sequential(*[nn.Linear(2*8*multiplier, 16*multiplier) ]))
-            self.r_conv_3 = EdgeConv(torch.nn.Sequential(*[nn.Linear(2*16*multiplier, 32*multiplier) ]))
-            self.r_conv_4 = EdgeConv(torch.nn.Sequential(*[nn.Linear(2*32*multiplier, 76*multiplier) ]))
-
+            self.r_graph_1 = EdgeConv(torch.nn.Sequential(*[nn.Linear(2*input_channel, 8*multiplier) ]))
+            self.r_graph_2 = EdgeConv(torch.nn.Sequential(*[nn.Linear(2*8*multiplier, 16*multiplier) ]))
+            self.r_graph_3 = EdgeConv(torch.nn.Sequential(*[nn.Linear(2*16*multiplier, 32*multiplier) ]))
+            self.r_graph_4 = EdgeConv(torch.nn.Sequential(*[nn.Linear(2*32*multiplier, 76*multiplier) ]))
         elif self.args.backbone_player == "DynamicEdgeConvGCN":
-            self.r_conv_1 = DynamicEdgeConv(torch.nn.Sequential(*[nn.Linear(2*input_channel, 8*multiplier) ]), k=3)
-            self.r_conv_2 = DynamicEdgeConv(torch.nn.Sequential(*[nn.Linear(2*8*multiplier, 16*multiplier) ]), k=3)
-            self.r_conv_3 = DynamicEdgeConv(torch.nn.Sequential(*[nn.Linear(2*16*multiplier, 32*multiplier) ]), k=3)
-            self.r_conv_4 = DynamicEdgeConv(torch.nn.Sequential(*[nn.Linear(2*32*multiplier, 76*multiplier) ]), k=3)
+            self.r_graph_1 = DynamicEdgeConv(torch.nn.Sequential(*[nn.Linear(2*input_channel, 8*multiplier) ]), k=3)
+            self.r_graph_2 = DynamicEdgeConv(torch.nn.Sequential(*[nn.Linear(2*8*multiplier, 16*multiplier) ]), k=3)
+            self.r_graph_3 = DynamicEdgeConv(torch.nn.Sequential(*[nn.Linear(2*16*multiplier, 32*multiplier) ]), k=3)
+            self.r_graph_4 = DynamicEdgeConv(torch.nn.Sequential(*[nn.Linear(2*32*multiplier, 76*multiplier) ]), k=3)
 
         elif "resGCN" in self.args.backbone_player:
             # hidden_channels=64, num_layers=28
@@ -236,9 +257,7 @@ class ContextAwareModel(nn.Module):
             self.lin = nn.Linear(hidden_channels, output_channel)
 
 
-
-
-    def forward_GCN(self, representation_inputs):
+    def forward_GNN(self, representation_inputs):
         BS = self.args.batch_size
         T = self.chunk_size
         # --------------------
@@ -246,19 +265,33 @@ class ContextAwareModel(nn.Module):
         # --------------------
         #print("Representation input size: ", representation_inputs.size())
 
-        #Base convolutional Layers
-        x, edge_index, batch = representation_inputs.x, representation_inputs.edge_index, representation_inputs.batch
+        # Get node and edge information
+        x = representation_inputs.x
+        batch = representation_inputs.batch
+        edge_index = representation_inputs.edge_index
+        edge_attr = representation_inputs.edge_attr[:,:4]
+        edge_weight = representation_inputs.edge_attr[:,4]
         
-        if self.args.backbone_player == "GCN" or self.args.backbone_player == "EdgeConvGCN":
-            x = F.relu(self.r_conv_1(x, edge_index))
-            x = F.relu(self.r_conv_2(x, edge_index))
-            x = F.relu(self.r_conv_3(x, edge_index))
-            x = F.relu(self.r_conv_4(x, edge_index))
+        if (self.args.backbone_player == "GCN") or (self.args.backbone_player == "EdgeConvGCN"):
+            x = F.relu(self.r_graph_1(x, edge_index=edge_index, edge_weight=edge_weight))
+            x = F.relu(self.r_graph_2(x, edge_index=edge_index, edge_weight=edge_weight))
+            x = F.relu(self.r_graph_3(x, edge_index=edge_index, edge_weight=edge_weight))
+            x = F.relu(self.r_graph_4(x, edge_index=edge_index, edge_weight=edge_weight))
+        elif (self.args.backbone_player == "GAT"):
+            x = F.relu(self.r_graph_1(x, edge_index=edge_index, edge_attr=edge_attr))
+            x = F.relu(self.r_graph_2(x, edge_index=edge_index, edge_attr=edge_attr))
+            x = F.relu(self.r_graph_3(x, edge_index=edge_index, edge_attr=edge_attr))
+            x = F.relu(self.r_graph_4(x, edge_index=edge_index, edge_attr=edge_attr))
+        elif (self.args.backbone_player == "GIN"):
+            x = F.relu(self.r_graph_1(x, edge_index=edge_index))
+            x = F.relu(self.r_graph_2(x, edge_index=edge_index))
+            x = F.relu(self.r_graph_3(x, edge_index=edge_index))
+            x = F.relu(self.r_graph_4(x, edge_index=edge_index))
         elif "DynamicEdgeConvGCN" in self.args.backbone_player: #EdgeConvGCN or DynamicEdgeConvGCN
-            x = F.relu(self.r_conv_1(x, batch))
-            x = F.relu(self.r_conv_2(x, batch))
-            x = F.relu(self.r_conv_3(x, batch))
-            x = F.relu(self.r_conv_4(x, batch))
+            x = F.relu(self.r_graph_1(x, batch))
+            x = F.relu(self.r_graph_2(x, batch))
+            x = F.relu(self.r_graph_3(x, batch))
+            x = F.relu(self.r_graph_4(x, batch))
         elif "resGCN" in self.args.backbone_player: #EdgeConvGCN or DynamicEdgeConvGCN
             x = self.node_encoder(x)
             # edge_attr = self.edge_encoder(edge_attr)
@@ -275,7 +308,7 @@ class ContextAwareModel(nn.Module):
 
             x = self.lin(x)
         # print("before max_pool", x.shape)
-        x = global_max_pool(x, batch) 
+        x = global_mean_pool(x, batch) 
         # print("after max_pool", x.shape)
         # print(batch)
         # BS = inputs.shape[0]

@@ -18,6 +18,12 @@ class ContextAwareLoss(torch.nn.Module):
         self.weights = weights
 
     def forward(self, gt_label, pred_score, device):
+        
+        if torch.cuda.is_available():
+                device = torch.device("cuda")
+        else:
+            device = torch.device("cpu")
+        
         params = self.K.to(device)
         hit_radius = self.hit_radius
         miss_radius = self.miss_radius

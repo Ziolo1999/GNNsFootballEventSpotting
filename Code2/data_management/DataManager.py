@@ -25,26 +25,6 @@ from torch_geometric.data import Batch
 import copy
 from dataclasses import dataclass
 
-
-def generate_artificial_targets(annotations, Ks):
-    nb_frames = annotations.shape[0]
-    nb_actions = annotations.shape[1]
-
-    sigma = Ks/4
-    scaler = Ks * 5/8
-
-    events = list(zip(np.where(annotations==1)))
-    targets_holder = np.zeros((nb_frames, nb_frames, nb_actions))
-    frame_array = np.arange(nb_frames)
-
-    # Generate distributions
-    for frame, event in enumerate(events):
-        targets_holder[:,frame, event] = norm.pdf(frame_array, event, sigma)
-    
-    # Get final targets
-    targets = np.max(targets_holder, axis=1) * scaler
-    
-    return targets
     
 class CALFData(Dataset):
     def __init__(self, split="train", args=None): 
@@ -64,9 +44,9 @@ class CALFData(Dataset):
         self.listGames = find_files("../football_games")
 
         if split == "train":
-            DM = DataManager(files=self.listGames[0:10], framerate=args.fps/25, alive=False)
+            DM = DataManager(files=self.listGames[2:12], framerate=args.fps/25, alive=False)
         elif split == "validate":
-            DM = DataManager(files=self.listGames[10:12], framerate=args.fps/25, alive=False)
+            DM = DataManager(files=self.listGames[0:2], framerate=args.fps/25, alive=False)
         
         DM.read_games(focused_annotation=args.focused_annotation, 
                       generate_augmented_data=args.generate_augmented_data)
@@ -97,14 +77,18 @@ class CALFData(Dataset):
 
         game_counter = 0
         for game_indx in tqdm(range(len(DM.datasets)), desc="Get labels & features"):
+            
             # calculate shifts 
             shifts = oneHotToShifts(np.array(DM.annotations[game_indx]), self.K_parameters.numpy())
+            
             # calculate anchors
             anchors = getChunks_anchors(shifts, game_counter, self.K_parameters.numpy(), self.chunk_size, self.receptive_field)
             game_counter = game_counter+1
+
             # Generate artificial_targets
             if self.args.generate_artificial_targets:
-                self.artificial_targets.append(generate_artificial_targets(DM.annotations[game_indx], self.K_parameters[3,:].numpy()))
+                self.artificial_targets.append(generate_artificial_targets(DM.annotations[game_indx], self.K_parameters[3,:]))
+
             # Generate pytorch-geometrics Data
             representation = []
             for frame in range(DM.datasets[game_indx].shape[0]):
@@ -114,18 +98,25 @@ class CALFData(Dataset):
                 x = torch.tensor(Features, dtype=torch.float)
 
                 # Get edges indicses
-                rows, cols = np.nonzero(DM.edges[game_indx][frame])
+                rows, cols = np.nonzero(DM.edge_weights[game_indx][frame])
                 Edges = np.stack((rows, cols))
                 edge_index = torch.tensor(Edges, dtype=torch.long)
+            
+                # Get edge weights
+                # edge_weight = torch.tensor(
+                #     [DM.edge_weights[game_indx][frame][x, y] for x, y in zip(rows, cols)], 
+                #     dtype=torch.float
+                # )
                 
                 # Get edge weights
                 edge_attr = torch.tensor(
                     [
                         [
-                        DM.edges[game_indx][frame][x, y],
+                        DM.distances[game_indx][frame][x, y],
                         DM.velocity_diffs[game_indx][frame][x, y],
                         DM.acceleration_diffs[game_indx][frame][x, y],
-                        DM.direction_diffs[game_indx][frame][x, y]
+                        DM.direction_diffs[game_indx][frame][x, y],
+                        DM.edge_weights[game_indx][frame][x, y]
                         ] for x, y in zip(rows, cols)
                     ], 
                     dtype=torch.float
@@ -181,19 +172,19 @@ class CALFData(Dataset):
                 start = random.randint(0, len(self.game_labels[game_index])-self.chunk_size)
         
         # Extract the clips 
-        clip_labels = copy.deepcopy(self.game_labels[game_index][start:start+self.chunk_size])
+        if self.args.generate_artificial_targets:
+            clip_labels = self.artificial_targets[game_index][start:start+self.chunk_size,:]        
+        else:
+            clip_labels = copy.deepcopy(self.game_labels[game_index][start:start+self.chunk_size])
 
-        # Put loss to zero outside receptive field
-        clip_labels[0:int(np.ceil(self.receptive_field/2)),:] = -1
-        clip_labels[-int(np.ceil(self.receptive_field/2)):,:] = -1
-        if np.all(clip_labels == -1):
-            print("All -1 in clip_labels")
+            # Put loss to zero outside receptive field
+            clip_labels[0:int(np.ceil(self.receptive_field/2)),:] = -1
+            clip_labels[-int(np.ceil(self.receptive_field/2)):,:] = -1
+            if np.all(clip_labels == -1):
+                print("All -1 in clip_labels")
             
         # Get the targets
-        if self.args.generate_artificial_targets:
-            clip_targets = self.artificial_targets[game_index][start:start+self.chunk_size,:]
-        else:
-            clip_targets = getTargets(clip_labels, self.receptive_field, self.fps)
+        clip_targets = getTargets(clip_labels, self.receptive_field, self.fps)
         
         clip_representation = None
         clip_representation = copy.deepcopy(self.game_representation[game_index][start:start+self.chunk_size])
@@ -215,7 +206,8 @@ class DataManager():
 
         self.matches = []
         self.datasets = []
-        self.edges = []
+        self.edge_weights = []
+        self.distances = []
         self.velocity_diffs = []
         self.acceleration_diffs = []
         self.direction_diffs = []
@@ -256,14 +248,15 @@ class DataManager():
                 logging.warning(f"Match {f.name} does not have 11 players in the {len(player_violation)} frames.")
             
             # Generate edges and synchronise annotations
-            dataset._generate_edges(threshold=None)
+            dataset._generate_edges(threshold=0.2)
             dataset._synchronize_annotations(focused_annotation=focused_annotation)
 
             # Appends data
             self.datasets.append(dataset.matrix)
-            self.edges.append(dataset.edges)
             self.matches.append(f.name)
             self.annotations.append(dataset.annotations)
+            self.edge_weights.append(dataset.edge_weight)
+            self.distances.append(dataset.distance)
             self.velocity_diffs.append(dataset.velocity_diff)
             self.acceleration_diffs.append(dataset.acceleration_diff)
             self.direction_diffs.append(dataset.direction_diff)
@@ -275,14 +268,15 @@ class DataManager():
 
                     # Generate mirrored actions
                     player_violation = dataset._generate_node_features(x_mirror, y_mirror)
-                    dataset._generate_edges(None)
+                    dataset._generate_edges(threshold=0.2)
                     # dataset._synchronize_annotations(focused_annotation=focused_annotation)
                     
                     # Add to dataset
                     self.datasets.append(dataset.matrix)
-                    self.edges.append(dataset.edges)
                     self.matches.append(f.name)
                     self.annotations.append(dataset.annotations)
+                    self.edge_weights.append(dataset.edge_weight)
+                    self.distances.append(dataset.distance)
                     self.velocity_diffs.append(dataset.velocity_diff)
                     self.acceleration_diffs.append(dataset.acceleration_diff)
                     self.direction_diffs.append(dataset.direction_diff)

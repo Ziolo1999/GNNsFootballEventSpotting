@@ -372,7 +372,7 @@ class DatasetPreprocessor:
 
         return player_violation
 
-    def _generate_edges(self, threshold:float=None):
+    def _generate_edges(self, threshold:float=1000):
         """
         Generates adjacency matrix
         """
@@ -396,18 +396,12 @@ class DatasetPreprocessor:
         # get final distances
         difference = x_dist**2+y_dist**2
         distance = np.sqrt(difference)
-
-        # determine connections
-        # distance = np.where(distance < threshold, 1, 0)
+        self.distance = distance
         
-        if threshold:
-            distance = np.where(distance < threshold, distance, 1)
-        
-        distance = 1-distance
-        # fill diagonal for each frame with ones
-        # player_indx = np.arange(player_dim)
-        # distance[:, player_indx, player_indx] = 1
-        self.edges = distance
+        # Determine edge weights
+        weights = np.where(distance < threshold, distance, 1)
+        weights = 1 - weights
+        self.edge_weight = weights   
 
         # get velocity differences
         velocity = self.matrix[:,3,:]

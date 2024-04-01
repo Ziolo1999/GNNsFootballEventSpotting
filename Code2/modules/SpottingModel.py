@@ -26,6 +26,7 @@ class SpottingModel(nn.Module):
         # ---------------------------------
 
         self.model = torch.load(args.sgementation_path)
+        self.model.eval()
         if args.freeze_model:
             for param in self.model.parameters():
                 param.requires_grad = False
