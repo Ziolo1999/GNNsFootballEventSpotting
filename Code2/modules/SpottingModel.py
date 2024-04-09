@@ -42,9 +42,9 @@ class SpottingModel(nn.Module):
         self.global_avg_pooling = nn.AdaptiveAvgPool1d(1)
 
         # Further convolutions layers
-        self.conv1d_layer_2 = nn.Conv1d(in_channels=self.num_classes, out_channels=2*self.num_classes, kernel_size=5, stride=1, padding=2)
-        self.conv1d_layer_3 = nn.Conv1d(in_channels=2*self.num_classes, out_channels=4*self.num_classes, kernel_size=5, stride=1, padding=2)
-        self.conv1d_layer_4 = nn.Conv1d(in_channels=4*self.num_classes, out_channels=8*self.num_classes, kernel_size=5, stride=1, padding=2)
+        self.conv1d_layer_1 = nn.Conv1d(in_channels=self.num_classes, out_channels=2*self.num_classes, kernel_size=5, stride=1, padding=2)
+        self.conv1d_layer_2 = nn.Conv1d(in_channels=2*self.num_classes, out_channels=4*self.num_classes, kernel_size=5, stride=1, padding=2)
+        self.conv1d_layer_3 = nn.Conv1d(in_channels=4*self.num_classes, out_channels=8*self.num_classes, kernel_size=5, stride=1, padding=2)
         self.dropout = nn.Dropout(p=0.2)
 
         # Classifier
@@ -81,17 +81,17 @@ class SpottingModel(nn.Module):
         # print("Whole context size: ", global_avg_pooling.size())
 
         # Get more detailed information
-        conv1d_layer_2 = self.conv1d_layer_2(self.dropout(max_pool_smooth))
+        conv1d_layer_1 = self.conv1d_layer_1(self.dropout(max_pool_smooth))
         # print("Conv1d_layer_2 size: ", conv1d_layer_2.size())
 
-        conv1d_layer_3 = self.conv1d_layer_3(self.dropout(F.relu(conv1d_layer_2)))
+        conv1d_layer_2 = self.conv1d_layer_2(self.dropout(F.relu(conv1d_layer_1)))
         # print("Conv1d_layer_3 size: ", conv1d_layer_3.size())
         
-        conv1d_layer_4 = self.conv1d_layer_4(self.dropout(F.relu(conv1d_layer_3)))
+        conv1d_layer_3 = self.conv1d_layer_3(self.dropout(F.relu(conv1d_layer_2)))
         # print("Conv1d_layer_4 size: ", conv1d_layer_4.size())
 
         # Concatenated information
-        concatenation = torch.cat((global_avg_pooling, conv1d_layer_2, conv1d_layer_3, conv1d_layer_4), dim=1)
+        concatenation = torch.cat((global_avg_pooling, conv1d_layer_1, conv1d_layer_2, conv1d_layer_3), dim=1)
 
         # Classification
         spotting_output = self.classifier(self.dropout(F.relu(concatenation)))

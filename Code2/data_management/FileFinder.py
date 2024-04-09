@@ -48,10 +48,10 @@ def find_files(folder: str, decompress: bool=False):
 
 
             if dat_file is None or xml_file is None or ann_file is None:
-                if dat_file is None:
-                    logging.warning(f"{root} does not contain dat file")
-                if xml_file is None:
-                    logging.warning(f"{root} does not contain xml file")
+                # if dat_file is None:
+                #     logging.warning(f"{root} does not contain dat file")
+                # if xml_file is None:
+                #     logging.warning(f"{root} does not contain xml file")
                 continue
             
             # Get info fo MatchFile class 
