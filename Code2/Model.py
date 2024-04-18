@@ -3,7 +3,7 @@ import __future__
 
 import numpy as np
 import warnings
-from modules.NetVLAD import NetVLAD, NetRVLAD
+from modules.NetVLAD import NetVLAD, NetRVLAD, ContextualNetVLAD
 
 import torch
 import torch.nn as nn
@@ -16,8 +16,7 @@ from torch_geometric.nn.models import GAT, GIN, GCN
 from torch_geometric.nn import GENConv, DeepGCNLayer
 from torch_geometric.nn import global_max_pool, global_mean_pool
 
-
-class SegmentationModel(nn.Module):
+class ContextAwareNetVladTemporal(nn.Module):
     def __init__(self, num_classes=3, args=None):
         """
         INPUT: a Tensor of the form (batch_size,1,chunk_size,input_size)
@@ -25,7 +24,7 @@ class SegmentationModel(nn.Module):
                     2. The action spotting of the form (batch_size,num_detections,2+num_classes)
         """
 
-        super(SegmentationModel, self).__init__()
+        super(ContextAwareNetVladTemporal, self).__init__()
 
         self.args = args
         self.load_weights(weights=args.load_weights)
@@ -42,12 +41,12 @@ class SegmentationModel(nn.Module):
         # -------------------------------
         # Initialize the player backbone
         # -------------------------------
-        self.init_GNN(multiplier=2*self.args.feature_multiplier)
+        self.init_GNN(multiplier=self.args.feature_multiplier)
 
         # -------------------------------
         # Initialize the NetVLAD pooling
         # -------------------------------
-        self.init_NetVLAD(vocab_size=self.args.vocab_size, pooling=self.args.pooling, multiplier=2*self.args.feature_multiplier)
+        self.init_NetVLAD(vocab_size=self.args.vocab_size, pooling=self.args.pooling, multiplier=self.args.feature_multiplier)
 
         # -------------------
         # Segmentation module
@@ -56,7 +55,7 @@ class SegmentationModel(nn.Module):
         self.pad_seg = nn.ZeroPad2d((0,0,(self.kernel_seg_size-1)//2, self.kernel_seg_size-1-(self.kernel_seg_size-1)//2))
         
         # Tackles fetaures from GNN backbone
-        self.conv_seg = nn.Conv2d(in_channels=(152*self.args.feature_multiplier+self.num_classes), out_channels=int(self.dim_capsule*self.num_classes), kernel_size=(self.kernel_seg_size,1))
+        self.conv_seg = nn.Conv2d(in_channels=(76*self.args.feature_multiplier*self.vocab_size), out_channels=int(self.dim_capsule*self.num_classes), kernel_size=(self.kernel_seg_size,1))
         self.batch_seg = nn.BatchNorm2d(num_features=self.chunk_size, momentum=0.01,eps=0.001)
         
 
@@ -74,14 +73,273 @@ class SegmentationModel(nn.Module):
         # Feature input (chunks of the video)
         # -----------------------------------
         gnn_concatenation = self.forward_GNN(representation_inputs)
-        print("GNN output size: ", gnn_concatenation.size())
+        # print("GNN output size: ", gnn_concatenation.size())
         # print(torch.cuda.memory_allocated()/10**9)
 
         # -----------------------------------
         # NetVLAD pooling
         # -----------------------------------
         netvlad_out = self.forward_NetVLAD(gnn_concatenation)
-        print("NetVLAD output size: ", netvlad_out.size())
+        # print("NetVLAD output size: ", netvlad_out.size())
+        
+
+        # -------------------
+        # Segmentation module
+        # -------------------
+
+        conv_seg = self.conv_seg(self.pad_seg(netvlad_out))
+        # print("Conv_seg size: ", conv_seg.size())
+        # print(torch.cuda.memory_allocated()/10**9)
+
+        conv_seg_permuted = conv_seg.permute(0,2,3,1)
+        # print("Conv_seg_permuted size: ", conv_seg_permuted.size())
+        # print(torch.cuda.memory_allocated()/10**9)
+
+        conv_seg_reshaped = conv_seg_permuted.view(conv_seg_permuted.size()[0],conv_seg_permuted.size()[1],self.dim_capsule,self.num_classes)
+        # print("Conv_seg_reshaped size: ", conv_seg_reshaped.size())
+        # print(torch.cuda.memory_allocated()/10**9)
+
+        #conv_seg_reshaped_permuted = conv_seg_reshaped.permute(0,3,1,2)
+        #print("Conv_seg_reshaped_permuted size: ", conv_seg_reshaped_permuted.size())
+
+        conv_seg_norm = torch.sigmoid(self.batch_seg(conv_seg_reshaped))
+        # print("Conv_seg_norm: ", conv_seg_norm.size())
+        # print(torch.cuda.memory_allocated()/10**9)
+
+        #conv_seg_norm_permuted = conv_seg_norm.permute(0,2,3,1)
+        #print("Conv_seg_norm_permuted size: ", conv_seg_norm_permuted.size())
+
+        output_segmentation = torch.sqrt(torch.sum(torch.square(conv_seg_norm-0.5), dim=2)*4/self.dim_capsule)
+        # print("Output_segmentation size: ", output_segmentation.size())
+        # print(torch.cuda.memory_allocated()/10**9)
+        return output_segmentation
+
+    def init_GNN(self,multiplier=1):
+
+        # ---------------------
+        # Representation branch
+        # ---------------------
+        # Base convolutional layers
+        input_channel = self.input_channel
+        # print("input_channel", input_channel)
+        
+        if self.args.backbone_player == "GCN":
+            self.r_graph_1 = GCNConv(input_channel, 8*multiplier)
+            self.r_graph_2 = GCNConv(8*multiplier, 16*multiplier)
+            self.r_graph_3 = GCNConv(16*multiplier, 32*multiplier)
+            self.r_graph_4 = GCNConv(32*multiplier, 76*multiplier)
+        
+        elif self.args.backbone_player == "GAT":
+            self.r_graph_1 = GATConv(input_channel, 8*multiplier, heads=4, concat=False)
+            self.r_graph_2 = GATConv(8*multiplier, 16*multiplier, heads=4, concat=False)
+            self.r_graph_3 = GATConv(16*multiplier, 32*multiplier, heads=4, concat=False)
+            self.r_graph_4 = GATConv(32*multiplier, 76*multiplier, heads=4, concat=False)
+        
+        elif self.args.backbone_player == "GIN":
+            self.r_graph_1 = GINConv(
+                                    Sequential(Linear(input_channel,  8*multiplier),
+                                    BatchNorm1d(8*multiplier), ReLU(),
+                                    Linear(8*multiplier, 8*multiplier), ReLU())
+                                    )
+            self.r_graph_2 = GINConv(
+                                    Sequential(Linear(8*multiplier,  16*multiplier),
+                                    BatchNorm1d(16*multiplier), ReLU(),
+                                    Linear(16*multiplier, 16*multiplier), ReLU())
+                                    )
+            self.r_graph_3 = GINConv(
+                                    Sequential(Linear(16*multiplier,  32*multiplier),
+                                    BatchNorm1d(32*multiplier), ReLU(),
+                                    Linear(32*multiplier, 32*multiplier), ReLU())
+                                    )
+            self.r_graph_4 = GINConv(
+                                    Sequential(Linear(32*multiplier,  76*multiplier),
+                                    BatchNorm1d(76*multiplier), ReLU(),
+                                    Linear(76*multiplier, 76*multiplier), ReLU())
+                                    )
+        elif self.args.backbone_player == "EdgeConvGCN":
+            self.r_graph_1 = EdgeConv(torch.nn.Sequential(*[nn.Linear(2*input_channel, 8*multiplier) ]))
+            self.r_graph_2 = EdgeConv(torch.nn.Sequential(*[nn.Linear(2*8*multiplier, 16*multiplier) ]))
+            self.r_graph_3 = EdgeConv(torch.nn.Sequential(*[nn.Linear(2*16*multiplier, 32*multiplier) ]))
+            self.r_graph_4 = EdgeConv(torch.nn.Sequential(*[nn.Linear(2*32*multiplier, 76*multiplier) ]))
+        
+        elif self.args.backbone_player == "DynamicEdgeConvGCN":
+            self.r_graph_1 = DynamicEdgeConv(torch.nn.Sequential(*[nn.Linear(2*input_channel, 8*multiplier) ]), k=3)
+            self.r_graph_2 = DynamicEdgeConv(torch.nn.Sequential(*[nn.Linear(2*8*multiplier, 16*multiplier) ]), k=3)
+            self.r_graph_3 = DynamicEdgeConv(torch.nn.Sequential(*[nn.Linear(2*16*multiplier, 32*multiplier) ]), k=3)
+            self.r_graph_4 = DynamicEdgeConv(torch.nn.Sequential(*[nn.Linear(2*32*multiplier, 76*multiplier) ]), k=3)
+
+        elif "resGCN" in self.args.backbone_player:
+            # hidden_channels=64, num_layers=28
+            # input_channel = 6
+            output_channel = 76*multiplier
+            hidden_channels = 64
+            self.num_layers = int(self.args.backbone_player.split("-")[-1])
+
+            self.node_encoder = nn.Linear(input_channel, hidden_channels)
+            self.edge_encoder = nn.Linear(input_channel, hidden_channels)
+            self.layers = torch.nn.ModuleList()
+            for i in range(1, self.num_layers + 1):
+                conv = GENConv(hidden_channels, hidden_channels, aggr='softmax',
+                            t=1.0, learn_t=True, num_layers=2, norm='layer')
+                norm = nn.LayerNorm(hidden_channels, elementwise_affine=True)
+                act = nn.ReLU(inplace=True)
+
+                layer = DeepGCNLayer(conv, norm, act, block='res', dropout=0.1,
+                                    ckpt_grad=i % 3)
+                self.layers.append(layer)
+
+            self.lin = nn.Linear(hidden_channels, output_channel)
+
+
+    def forward_GNN(self, representation_inputs):
+        BS = self.args.batch_size
+        T = self.chunk_size
+        # --------------------
+        # Representation input -> GCN
+        # --------------------
+        #print("Representation input size: ", representation_inputs.size())
+
+        # Get node and edge information
+        x = representation_inputs.x
+        batch = representation_inputs.batch
+        edge_index = representation_inputs.edge_index
+        edge_attr = representation_inputs.edge_attr[:,:4]
+        edge_weight = representation_inputs.edge_attr[:,4]
+        
+        if (self.args.backbone_player == "GCN") or (self.args.backbone_player == "EdgeConvGCN"):
+            x = F.relu(self.r_graph_1(x, edge_index=edge_index, edge_weight=edge_weight))
+            x = F.relu(self.r_graph_2(x, edge_index=edge_index, edge_weight=edge_weight))
+            x = F.relu(self.r_graph_3(x, edge_index=edge_index, edge_weight=edge_weight))
+            x = F.relu(self.r_graph_4(x, edge_index=edge_index, edge_weight=edge_weight))
+        elif (self.args.backbone_player == "GAT"):
+            x = F.relu(self.r_graph_1(x, edge_index=edge_index, edge_attr=edge_attr))
+            x = F.relu(self.r_graph_2(x, edge_index=edge_index, edge_attr=edge_attr))
+            x = F.relu(self.r_graph_3(x, edge_index=edge_index, edge_attr=edge_attr))
+            x = F.relu(self.r_graph_4(x, edge_index=edge_index, edge_attr=edge_attr))
+        elif (self.args.backbone_player == "GIN"):
+            x = F.relu(self.r_graph_1(x, edge_index=edge_index))
+            x = F.relu(self.r_graph_2(x, edge_index=edge_index))
+            x = F.relu(self.r_graph_3(x, edge_index=edge_index))
+            x = F.relu(self.r_graph_4(x, edge_index=edge_index))
+        elif "DynamicEdgeConvGCN" in self.args.backbone_player: #EdgeConvGCN or DynamicEdgeConvGCN
+            x = F.relu(self.r_graph_1(x, batch))
+            x = F.relu(self.r_graph_2(x, batch))
+            x = F.relu(self.r_graph_3(x, batch))
+            x = F.relu(self.r_graph_4(x, batch))
+        elif "resGCN" in self.args.backbone_player: #EdgeConvGCN or DynamicEdgeConvGCN
+            x = self.node_encoder(x)
+            x = self.layers[0].conv(x, edge_index)
+
+            for layer in self.layers[1:]:
+                x = layer(x, edge_index)
+
+            x = self.layers[0].act(self.layers[0].norm(x))
+            x = F.dropout(x, p=0.1, training=self.training)
+
+            x = self.lin(x)
+        # print("before max_pool", x.shape)
+        x = global_mean_pool(x, batch) 
+        # print("after max_pool", x.shape)
+        # print(batch)
+        # BS = inputs.shape[0]
+
+        # magic fix with zero padding
+        expected_size = BS * T
+        x = torch.cat([x, torch.zeros(expected_size-x.shape[0], x.shape[1]).to(x.device)], 0)
+
+        x = x.reshape(BS, T, x.shape[1]) #BSxTxFS
+        x = x.permute((0,2,1)) #BSxFSxT
+        x = x.unsqueeze(-1) #BSxFSxTx1
+        r_concatenation = x
+
+        return r_concatenation
+    
+    def init_NetVLAD(self, vocab_size=64, pooling="NetVLAD", multiplier=2):
+        self.vocab_size = vocab_size
+        input_size = 76*multiplier
+        vlad_out_dim = int(input_size * vocab_size)
+
+        if pooling == "NetVLAD":
+            self.vlad = ContextualNetVLAD(cluster_size=int(vocab_size), feature_size=input_size,
+                                            add_batch_norm=True)
+            
+            
+    def forward_NetVLAD(self, gnn_output):
+        BS,FS,T,_ = gnn_output.shape
+        gnn_output = gnn_output.squeeze(-1)
+        gnn_output_permuted = gnn_output.permute((0,2,1))
+        
+        vlad_output = self.vlad(gnn_output_permuted) # BSxTx(FSxC)
+        vlad_output = vlad_output.permute((0,2,1))
+        vlad_output = vlad_output.unsqueeze(-1)
+        return vlad_output
+
+
+class ContextAwareNetVladGlobal(nn.Module):
+    def __init__(self, num_classes=3, args=None):
+        """
+        INPUT: a Tensor of the form (batch_size,1,chunk_size,input_size)
+        OUTPUTS:    1. The segmentation of the form (batch_size,chunk_size,num_classes)
+                    2. The action spotting of the form (batch_size,num_detections,2+num_classes)
+        """
+
+        super(ContextAwareNetVladGlobal, self).__init__()
+
+        self.args = args
+        self.load_weights(weights=args.load_weights)
+
+        # self.input_size = args.num_features
+        self.num_classes = args.annotation_nr
+        self.dim_capsule = args.dim_capsule
+        self.receptive_field = args.receptive_field*args.fps
+        # self.num_detections = args.num_detections
+        self.chunk_size = args.chunk_size*args.fps
+        self.fps = args.fps
+        self.input_channel = args.input_channel
+
+        # -------------------------------
+        # Initialize the player backbone
+        # -------------------------------
+        self.init_GNN(multiplier=self.args.feature_multiplier)
+
+        # -------------------------------
+        # Initialize the NetVLAD pooling
+        # -------------------------------
+        self.init_NetVLAD(vocab_size=self.args.vocab_size, pooling=self.args.pooling, multiplier=self.args.feature_multiplier)
+
+        # -------------------
+        # Segmentation module
+        # -------------------
+        self.kernel_seg_size = 3
+        self.pad_seg = nn.ZeroPad2d((0,0,(self.kernel_seg_size-1)//2, self.kernel_seg_size-1-(self.kernel_seg_size-1)//2))
+        
+        # Tackles fetaures from GNN backbone
+        self.conv_seg = nn.Conv2d(in_channels=(152*self.args.feature_multiplier), out_channels=int(self.dim_capsule*self.num_classes), kernel_size=(self.kernel_seg_size,1))
+        self.batch_seg = nn.BatchNorm2d(num_features=self.chunk_size, momentum=0.01,eps=0.001)
+        
+
+    def load_weights(self, weights=None):
+        if(weights is not None):
+            print("=> loading checkpoint '{}'".format(weights))
+            checkpoint = torch.load(weights)
+            self.load_state_dict(checkpoint['state_dict'])
+            print("=> loaded checkpoint '{}' (epoch {})"
+                  .format(weights, checkpoint['epoch']))
+
+    def forward(self, representation_inputs):
+
+        # -----------------------------------
+        # Feature input (chunks of the video)
+        # -----------------------------------
+        gnn_concatenation = self.forward_GNN(representation_inputs)
+        # print("GNN output size: ", gnn_concatenation.size())
+        # print(torch.cuda.memory_allocated()/10**9)
+
+        # -----------------------------------
+        # NetVLAD pooling
+        # -----------------------------------
+        netvlad_out = self.forward_NetVLAD(gnn_concatenation)
+        # print("NetVLAD output size: ", netvlad_out.size())
         
 
         # -------------------
@@ -269,7 +527,7 @@ class SegmentationModel(nn.Module):
             self.vlad = NetRVLAD(cluster_size=int(vocab_size), feature_size=input_size,
                                             add_batch_norm=True)
             
-        self.vlad_linear = nn.Linear(vlad_out_dim, self.num_classes)
+        self.vlad_linear = nn.Linear(vlad_out_dim, input_size)
             
     def forward_NetVLAD(self, gnn_output):
         BS,FS,T,_ = gnn_output.shape
@@ -277,12 +535,11 @@ class SegmentationModel(nn.Module):
         gnn_output_permuted = gnn_output.permute((0,2,1))
         
         vlad_desc = self.vlad(gnn_output_permuted) # BSx(FSxC)
-        vlad_output = self.vlad_linear(vlad_desc) # BSxANN
-        vlad_output = vlad_output.unsqueeze(-1).expand(-1, -1, T) # BSxANNxT
-        vlad_output = vlad_output.unsqueeze(-1) # BSxANNxTx1
+        vlad_output = self.vlad_linear(vlad_desc) # BSxFS
+        vlad_output = vlad_output.unsqueeze(-1).expand(-1, -1, T) # BSxFSxT
+        vlad_output = vlad_output.unsqueeze(-1) # BSxFSxTx1
         return vlad_output
 
-    
 
 class SpottingModel(nn.Module):
     def __init__(self, args=None):
@@ -328,7 +585,8 @@ class SpottingModel(nn.Module):
 
         # Classifier
     
-        self.classifier = nn.Conv1d(in_channels=15*self.num_classes, out_channels=self.num_classes, kernel_size=1) 
+        self.classifier = nn.Conv1d(in_channels=15*self.num_classes, out_channels=self.num_classes, kernel_size=1)
+        # self.layer_normalisation = nn.LayerNorm(self.num_classes) 
 
     def forward(self, representation):
 
@@ -374,6 +632,9 @@ class SpottingModel(nn.Module):
 
         # Classification
         spotting_output = self.classifier(self.dropout(F.relu(concatenation)))
+
+        # Layer normalisation
+        # spotting_output = self.layer_normalisation(spotting_output)
 
         return spotting_output.permute(0,2,1)
 
@@ -601,6 +862,57 @@ class ContextAwareModel(nn.Module):
         r_concatenation = x
 
         return r_concatenation
+
+
+class NetVLADModel(nn.Module):
+    def __init__(self, weights=None, input_size=512, num_classes=17, vocab_size=64, window_size=15, framerate=2, pool="NetVLAD"):
+        """
+        INPUT: a Tensor of shape (batch_size,window_size,feature_size)
+        OUTPUTS: a Tensor of shape (batch_size,num_classes+1)
+        """
+        super(NetVLADModel, self).__init__()
+
+        self.window_size_frame=window_size * framerate
+        self.input_size = input_size
+        self.num_classes = num_classes
+        self.framerate = framerate
+        self.pool = pool
+        self.vlad_k = vocab_size
+
+        if self.pool == "NetVLAD":
+            self.pool_layer = NetVLAD(cluster_size=self.vlad_k, feature_size=self.input_size,
+                                            add_batch_norm=True)
+            self.fc = nn.Linear(input_size*self.vlad_k, self.num_classes+1)
+
+        elif self.pool == "NetRVLAD":
+            self.pool_layer = NetRVLAD(cluster_size=self.vlad_k, feature_size=self.input_size,
+                                            add_batch_norm=True)
+            self.fc = nn.Linear(input_size*self.vlad_k, self.num_classes+1)
+
+        self.drop = nn.Dropout(p=0.4)
+        self.sigm = nn.Sigmoid()
+
+        self.load_weights(weights=weights)
+
+    def load_weights(self, weights=None):
+        if(weights is not None):
+            print("=> loading checkpoint '{}'".format(weights))
+            checkpoint = torch.load(weights)
+            self.load_state_dict(checkpoint['state_dict'])
+            print("=> loaded checkpoint '{}' (epoch {})"
+                  .format(weights, checkpoint['epoch']))
+
+    def forward(self, inputs):
+        # input_shape: (batch,frames,dim_features)
+
+
+        BS, FR, IC = inputs.shape
+        inputs_pooled = self.pool_layer(inputs)
+
+        # Extra FC layer with dropout and sigmoid activation
+        output = self.sigm(self.fc(self.drop(inputs_pooled)))
+
+        return output
 
 
 class BaseContextAwareModel(nn.Module):
@@ -1075,4 +1387,4 @@ class BaseContextAwareModel(nn.Module):
 
         return r_concatenation
     
-    
+

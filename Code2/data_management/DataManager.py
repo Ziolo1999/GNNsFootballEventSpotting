@@ -47,6 +47,8 @@ class CALFData(Dataset):
             DM = DataManager(files=self.listGames[2:12], framerate=args.fps/25, alive=False)
         elif split == "validate":
             DM = DataManager(files=self.listGames[0:2], framerate=args.fps/25, alive=False)
+        elif split == "calibrate":
+            DM = DataManager(files=self.listGames[1:2], framerate=args.fps/25, alive=False)
         
         DM.read_games(focused_annotation=args.focused_annotation, 
                       generate_augmented_data=args.generate_augmented_data)

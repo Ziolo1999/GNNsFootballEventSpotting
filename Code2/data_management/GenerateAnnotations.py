@@ -153,12 +153,12 @@ if __name__ == '__main__':
 # from FileFinder import find_files
 # listGames = find_files("../football_games")
 # listGames[11]
-# df_matches = sb.matches(competition_id=55, season_id=43)
+# df_matches = sb.matches(competition_id=43, season_id=3)
 # selected_matches = df_matches[(df_matches['home_team']=='Belgium') | (df_matches['away_team']=='Belgium')]
-# event = sb.events(match_id=3788743)
+# event = sb.events(match_id=8650)
 # event.sort_values(by=["period","timestamp"], inplace=True)
-# event[event.type=="Foul Committed"]
-# 15000/5/60
+# res = event[["type","period", "timestamp"]][event.type=="Shot"]
+
 # selected_classes = ['Pressure', 'Foul Committed', 'Ball Recovery', 'Duel', 'Shot', 'Dribble', 'Clearance', 'Goal Keeper', 'Pass']
 # occs = [annotations.occurences[ann] for ann in selected_classes]
 # occs = occs / np.sum(occs)

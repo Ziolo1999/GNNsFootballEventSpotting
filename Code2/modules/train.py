@@ -168,7 +168,7 @@ def train_segmentation(dataloader,
             model_end = time.time()
 
             seg_start = time.time()
-            loss_segmentation = criterion(labels, output_segmentation) 
+            loss_segmentation = criterion(labels, output_segmentation, device) 
             seg_end = time.time()
 
             # loss = weights[0]*loss_segmentation + weights[1]*loss_spotting

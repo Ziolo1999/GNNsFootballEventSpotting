@@ -52,6 +52,8 @@ def main():
     parser = argparse.ArgumentParser(prog="metric_visualiser", description="Visualise proposed metric")
     parser.add_argument("-m", "--model", help="The path to the base model")
     parser.add_argument("-t", "--threshold", help="The number of frames to visualise")
+    # parser.add_argument("-s", "--segmentation", help="True if visualise segmentation part, false to visualise spotting part")
+    # parser.add_argument("-c", "--calibration", help="True to use calibration models")
     parser.add_argument("-o", "--output", help="The path to the folder to save visualisation")
     sys_args = parser.parse_args()
     
@@ -61,6 +63,7 @@ def main():
     collate_fn = collateVisGCN
     # model = torch.load("models/edge_attr_GCN.pth.tar")
     model = torch.load(sys_args.model)
+    
     visualiser = Visualiser(collate_fn, args, model, smooth_rate=None, val=True)
 
     # Load the video
@@ -140,56 +143,56 @@ def main():
     # plt.subplots_adjust(hspace=0.25)
     
     # ANIMATION FUNCTIONS
-    def init():
-        # Tracking data init
-        scat_home.set_offsets(np.array([]).reshape(0, 2))
-        scat_away.set_offsets(np.array([]).reshape(0, 2))
-        scat_ball.set_offsets(np.array([]).reshape(0, 2))
+    # def init():
+    #     # Tracking data init
+    #     scat_home.set_offsets(np.array([]).reshape(0, 2))
+    #     scat_away.set_offsets(np.array([]).reshape(0, 2))
+    #     scat_ball.set_offsets(np.array([]).reshape(0, 2))
 
-        # Predictions init
-        for line in prediction_lines:
-            line.set_data([0], [0])
+    #     # Predictions init
+    #     for line in prediction_lines:
+    #         line.set_data([0], [0])
     
-    # Update function
-    def update(frame):
+    # # Update function
+    # def update(frame):
         
-        # Update video
-        start_video_frame = time.time()
-        ret, video_frame = capture.read()
-        end_video_frame = time.time()
+    #     # Update video
+    #     start_video_frame = time.time()
+    #     ret, video_frame = capture.read()
+    #     end_video_frame = time.time()
 
-        if not ret:
-            print("Failed to grab frame.")
-            return
+    #     if not ret:
+    #         print("Failed to grab frame.")
+    #         return
         
-        start_imshow = time.time()
-        video_ax.imshow(cv2.cvtColor(video_frame, cv2.COLOR_BGR2RGB))
-        end_imshow = time.time()
+    #     start_imshow = time.time()
+    #     video_ax.imshow(cv2.cvtColor(video_frame, cv2.COLOR_BGR2RGB))
+    #     end_imshow = time.time()
 
-        adjusted_frame = frame // update_interval_prediction
-        beginning = int(np.max([adjusted_frame+1-1500, 0]))
+    #     adjusted_frame = frame // update_interval_prediction
+    #     beginning = int(np.max([adjusted_frame+1-1500, 0]))
 
-        # Update tracking data
-        start_tracking = time.time()
-        scat_home.set_offsets(coords[adjusted_frame,:,:11].T)
-        scat_away.set_offsets(coords[adjusted_frame,:,11:].T)
-        scat_ball.set_offsets(ball_coords[adjusted_frame])
-        end_tracking = time.time()
+    #     # Update tracking data
+    #     start_tracking = time.time()
+    #     scat_home.set_offsets(coords[adjusted_frame,:,:11].T)
+    #     scat_away.set_offsets(coords[adjusted_frame,:,11:].T)
+    #     scat_ball.set_offsets(ball_coords[adjusted_frame])
+    #     end_tracking = time.time()
 
-        # Update predictions
-        start_predictions = time.time()
-        for i, (line, ax) in enumerate(zip(prediction_lines, prediction_axes)):
-            line.set_data(x_time[beginning:adjusted_frame+1], visualiser.segmentation[beginning:adjusted_frame+1, i])
-            ax.set_xlim(x_time[beginning], x_time[adjusted_frame+1])
-        end_predictions = time.time()
+    #     # Update predictions
+    #     start_predictions = time.time()
+    #     for i, (line, ax) in enumerate(zip(prediction_lines, prediction_axes)):
+    #         line.set_data(x_time[beginning:adjusted_frame+1], visualiser.segmentation[beginning:adjusted_frame+1, i])
+    #         ax.set_xlim(x_time[beginning], x_time[adjusted_frame+1])
+    #     end_predictions = time.time()
 
-        # Get times
-        video_frame_time = end_video_frame - start_video_frame
-        imshow_time = end_imshow - start_imshow
-        tracking_time = end_tracking - start_tracking
-        predictions_time = end_predictions - start_predictions
+    #     # Get times
+    #     video_frame_time = end_video_frame - start_video_frame
+    #     imshow_time = end_imshow - start_imshow
+    #     tracking_time = end_tracking - start_tracking
+    #     predictions_time = end_predictions - start_predictions
 
-        return video_frame_time, imshow_time, tracking_time, predictions_time
+    #     return video_frame_time, imshow_time, tracking_time, predictions_time
     
     def generate_frames(frame):
         
@@ -247,11 +250,6 @@ def main():
         plt.tight_layout()
         plt.subplots_adjust(hspace=0.25, wspace=0.1)
 
-        # # Get times
-        # video_frame_time = end_video_frame - start_video_frame
-        # imshow_time = end_imshow - start_imshow
-        # tracking_time = end_tracking - start_tracking
-        # predictions_time = end_predictions - start_predictions
         save_start = time.time()
         plt.savefig(f"{sys_args.output}/frame_animation{frame}.jpg")
         save_end = time.time()
@@ -259,13 +257,6 @@ def main():
 
         plt.close()
         return save_time
-        
-
-    # # use animation 
-    # ani = animation.FuncAnimation(fig=fig, func=update, frames=sys_args.threshold, init_func=init, interval=1000/fps)
-
-    # writer = FFMpegWriter(fps=20, codec='libx264', extra_args=['-preset', 'ultrafast', '-crf', '23'])
-    # ani.save(f"{sys_args.output}/GameVisualisationPrediction.mp4", writer=writer)
     
     # GENERATE FRAMES
     with tqdm(range(sys_args.threshold), total=sys_args.threshold) as t:        
