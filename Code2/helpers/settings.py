@@ -1,49 +1,43 @@
 from dataclasses import dataclass
 import numpy as np
+from helpers.classes import get_K_params
 
 @dataclass
 class Args:
-    receptive_field = 20
-    framerate = 5
-    chunks_per_epoch = 1824
-    class_split = "alive"
-    num_detections = 200
+    # DATA
     chunk_size = 60
     batch_size = 32
-    input_channel = 10
-
-    backbone_feature = None
-    backbone_player = "GCN"
-    tiny=None
-
-    max_epochs=1000
-    load_weights=None
-    model_name="Testing_Model"
-    mode=0
-    test_only=False
-    challenge=True
-    teacher=False
-    K_params=None
-    num_features=512
-    evaluation_frequency=20
-    dim_capsule=16
+    input_channel = 13
+    annotation_nr = 10
+    receptive_field = 12
+    fps = 5
+    K_parameters = get_K_params(chunk_size)
+    focused_annotation = None
+    generate_augmented_data = True
+    class_split = "alive"
+    generate_artificial_targets = False
+    
+    # TRAINING
+    chunks_per_epoch = 1824
     lambda_coord=5.0
     lambda_noobj=0.5
-    loss_weight_segmentation=0.000367
-    loss_weight_detection=1.0
-    feature_multiplier=1
-    calibration=False
-    calibration_field=False
-    calibration_cone=False
-    calibration_confidence=False
-    dim_representation_w=64
-    dim_representation_h=32
-    dim_representation_c=3
-    dim_representation_player=2
-    dist_graph_player=25
-    with_dropout=0.0
-    LR=1e-03
     patience=25
+    LR=1e-03
+    max_epochs=180
     GPU=0 
     max_num_worker=1
     loglevel='INFO'
+    
+    # SEGMENTATION MODULE
+    feature_multiplier=1
+    backbone_player = "GCN"
+    load_weights=None
+    model_name="Testing_Model"
+    dim_capsule=16
+    vocab_size=64
+    pooling=None
+
+    # SPOTTING MODULE
+    sgementation_path = None
+    freeze_model = None
+    spotting_fps = 1

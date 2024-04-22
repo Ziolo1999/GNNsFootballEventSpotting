@@ -2,66 +2,13 @@ import sys
 import os
 sys.path.append(os.path.abspath('.'))
 
-from data_management.DataManager import CALFData, collateGCN
 import numpy as np
-import torch 
-from Model import ContextAwareModel
-from helpers.loss import ContextAwareLoss, SpottingLoss
-from modules.train import trainer
-import pickle
-from dataclasses import dataclass
 import matplotlib.pyplot as plt
-from modules.Visualiser import collateVisGCN, Visualiser
-from helpers.evaluation import segmentation_correlation
-from helpers.classes import EVENT_DICTIONARY_V2_ALIVE as event_enc
-from helpers.classes import get_K_params
-import seaborn as sns
-import pandas as pd
 from scipy.stats import norm
 import argparse
 import random 
 from scipy.stats import skewnorm
 
-# @dataclass
-# class Args:
-#     receptive_field = 6
-#     fps = 5
-#     chunks_per_epoch = 1824
-#     class_split = "alive"
-#     chunk_size = 30
-#     batch_size = 32
-#     input_channel = 13
-#     feature_multiplier=1
-#     backbone_player = "GCN"
-#     max_epochs=180
-#     load_weights=None
-#     model_name="Testing_Model"
-#     dim_capsule=16
-#     lambda_coord=5.0
-#     lambda_noobj=0.5
-#     patience=25
-#     LR=1e-03
-#     GPU=0 
-#     max_num_worker=1
-#     loglevel='INFO'
-#     annotation_nr = 10
-#     K_parameters = get_K_params(chunk_size)
-#     focused_annotation = None
-#     generate_augmented_data = True
-#     sgementation_path = "models/detector_probs.pth.tar"
-#     freeze_model = True
-
-# args = Args
-# collate_fn = collateVisGCN
-# model_path = "models/detector_probs.pth.tar"
-# model = torch.load(model_path)
-# visualiser = Visualiser(collate_fn, args, model, smooth_rate=None, val=True)
-# precisions, recalls, f1_scores, total_targets = visualiser.norm_evaluation_segmentation()
-
-# plt.plot(total_targets[:, 8])
-# plt.plot(visualiser.segmentation[:,8])
-# plt.fill_between(np.arange(0,total_targets.shape[0]), np.minimum(total_targets[:, 8], visualiser.segmentation[:,8]), alpha=0.8)
-# plt.show()
 
 
 # Optimization to find the scale for which the peak is approximately 1

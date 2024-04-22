@@ -4,7 +4,7 @@ sys.path.append(os.path.abspath('.'))
 
 from dataclasses import dataclass
 from helpers.classes import get_K_params
-from modules.Visualiser import collateVisGCN, Visualiser
+from modules.GameAnalysis import GamaAnalysis
 import torch
 import cv2
 import matplotlib.pyplot as plt
@@ -70,17 +70,16 @@ def main():
     # Generate predictions for given model
     # Selected game Brasil vs Belgium WC2018
     args = Args
-    collate_fn = collateVisGCN
     model = torch.load(sys_args.model)
     model = torch.load("models/spotting_unfrozen_GCN.pth.tar")
-    visualiser = Visualiser(collate_fn, args, model, smooth_rate=None, val=True, seg_model=False, calibrate=True)
+    game_analyser = GamaAnalysis(args, model)
+    results, annotations = game_analyser.predict_game(game_index=0, seg_model=False, calibrate=True, ann=None)
 
     # Select top 5 missed predictions
-    predictions = visualiser.spotting[:visualiser.annotations.shape[0],:]
-    prediction_diffrence = predictions - visualiser.annotations
+    predictions = game_analyser.spotting[:game_analyser.annotations.shape[0],:]
+    prediction_diffrence = predictions - game_analyser.annotations
 
     ann_enc = ann_encoder[sys_args.annotation]
-    ann_enc = 3
     missed_predictions_sorted = np.argsort(prediction_diffrence[:,ann_enc])
     top_missed_predictions =  select_indices(missed_predictions_sorted, int(sys_args.threshold))
     
@@ -103,10 +102,10 @@ def main():
 
     # get scalars to represent players position on the map
     scalars = (pitch.dim.pitch_length, pitch.dim.pitch_width)
-    coords = visualiser.matrix[:,0:2,:].copy()
+    coords = game_analyser.matrix[:,0:2,:].copy()
     coords[:,0,:] = coords[:,0,:]*scalars[0]
     coords[:,1,:] = coords[:,1,:]*scalars[1]
-    ball_coords = visualiser.ball_coords.copy()
+    ball_coords = game_analyser.ball_coords.copy()
     ball_coords[:,0] = ball_coords[:,0]*scalars[0]
     ball_coords[:,1] = ball_coords[:,1]*scalars[1]
     # Details for scatter plots
@@ -116,7 +115,7 @@ def main():
     # Details about predictions
     prediction_fps = args.spotting_fps
     update_interval_prediction = int(video_fps / prediction_fps) # Interval that predictions need to be updated
-    x_time = np.arange(visualiser.spotting.shape[0]) / (prediction_fps*60)
+    x_time = np.arange(game_analyser.spotting.shape[0]) / (prediction_fps*60)
     
     def generate_frames(frame, beginning_preds, save_dir=None):
         
@@ -166,8 +165,8 @@ def main():
                 ax.set_ylim(0,1)
                 ax.set_facecolor('lightgray') 
                 ax.grid(True, color='white')
-                ax.plot(visualiser.spotting[beginning_preds:adjusted_frame_preds+1, index])
-                ax.plot(visualiser.annotations[beginning_preds:adjusted_frame_preds+1, index])
+                ax.plot(game_analyser.spotting[beginning_preds:adjusted_frame_preds+1, index])
+                ax.plot(game_analyser.annotations[beginning_preds:adjusted_frame_preds+1, index])
                 # ax.set_xlim(x_time[beginning], x_time[adjusted_frame+1])
                 index += 1
 
@@ -238,10 +237,9 @@ def select_indices(indices, number):
     return selected
 
 # Example usage
-# x = select_indices(top_10_missed_predictions, 10)
-# len(x)
 # ffmpeg -framerate 30 -i 'frame_animation%d.jpg' -c:v libx264 -pix_fmt yuv420p video.mp4
-    
+# rm *.jpg *.jpeg    
+
 if __name__ == '__main__':
     main()
 
