@@ -1,6 +1,7 @@
 import sys
 import os
 sys.path.append(os.path.abspath('.'))
+import logging
 
 from data_management.DataManager import CALFData, collateGCN
 import torch 
@@ -39,7 +40,7 @@ class Args:
     
     # SEGMENTATION MODULE
     feature_multiplier=1
-    backbone_player = "GAT"
+    backbone_player = "GCN"
     load_weights=None
     model_name="Testing_Model"
     dim_capsule=16
@@ -50,7 +51,7 @@ class Args:
     # SPOTTING MODULE
     sgementation_path = None
     freeze_model = None
-    spotting_fps = 1
+    spotting_fps=1
 
 def main():
     args = Args
@@ -79,11 +80,11 @@ def main():
                         criterion,
                         model_name=args.model_name,
                         max_epochs=args.max_epochs, 
-                        save_dir=f"/project_antwerp/models/backbone_GAT.pth.tar")
+                        save_dir=f"/project_antwerp/models/backbone_GCN.pth.tar")
 
     del train_dataset, validation_dataset, train_loader, validate_loader
 
-    with open(f'/project_antwerp/results/backbone_GAT.pkl', 'wb') as file:
+    with open(f'/project_antwerp/results/backbone_GCN.pkl', 'wb') as file:
         pickle.dump(losses, file)
 
 

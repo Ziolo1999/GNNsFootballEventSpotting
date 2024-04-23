@@ -9,7 +9,7 @@ import math
 # from helpers.preprocessing import batch2long, timestamps2long
 # from helpers.json_io import predictions2json
 
-
+# logging.basicConfig(level=logging.INFO)
 def trainer(train_loader,
             val_loader,
             model,
@@ -21,7 +21,7 @@ def trainer(train_loader,
             save_dir="models/detector.pth.tar",
             train_seg=True):
 
-    logging.info("start training")
+    logging.info("Start Training")
 
     best_loss = 9e99
     best_metric = -1
@@ -78,6 +78,7 @@ def trainer(train_loader,
 
         # Save the best model based on loss only if the evaluation frequency too long
         if is_better:
+            model = model.to("cpu")
             torch.save(model, save_dir)
 
         # Early stopping criterion
@@ -143,22 +144,22 @@ def train_segmentation(dataloader,
         model.train()
     else:
         model.eval()
+
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
         
+    model = model.to(device)
+
     end = time.time()
     with tqdm(enumerate(dataloader), total=len(dataloader), ncols=160) as t:
         for i, (labels, _, representations) in t: 
             # measure data loading time
             data_time.update(time.time() - end)
-            # if torch.backends.mps.is_available():
-            #     device = torch.device("mps")            
-            if torch.cuda.is_available():
-                device = torch.device("cuda")
-            else:
-                device = torch.device("cpu")
                 
             labels = labels.float().type(torch.float32).to(device)
             # targets = targets.float().type(torch.float32).to(device)
-            model = model.to(device)
 
             representations = representations.to(labels.device)
 
@@ -216,21 +217,21 @@ def train_spotting(dataloader,
         model.train()
     else:
         model.eval()
+    
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
         
+    model = model.to(device)
+
     end = time.time()
     with tqdm(enumerate(dataloader), total=len(dataloader), ncols=160) as t:
         for i, (_, targets, representations) in t: 
             # measure data loading time
             data_time.update(time.time() - end)
-            # if torch.backends.mps.is_available():
-            #     device = torch.device("mps")            
-            if torch.cuda.is_available():
-                device = torch.device("cuda")
-            else:
-                device = torch.device("cpu")
                 
             targets = targets.float().type(torch.float32).to(device)
-            model = model.to(device)
             representations = representations.to(targets.device)
 
             # compute output

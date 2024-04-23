@@ -10,13 +10,10 @@ ADD data_management/ data_management/
 ADD helpers/ helpers/
 ADD modules/ modules/
 ADD Model.py Model.py
+ADD GPUtraining/ GPUtraining/
 
-# Create folders to store model and training results
-RUN mkdir /models
-RUN mkdir /results
-
-# Copy and rename exp_get_explanation_step_1.py to main.py
-COPY GPUtraining/trainGAT.py main.py
-
-# Run main.py
-CMD python main.py
+# Run segmentation scripts.py
+CMD python GPUtraining/trainGCN.py
+CMD python GPUtraining/trainGAT.py
+CMD python GPUtraining/trainGIN.py
+CMD python GPUtraining/trainNetVladGCN.py

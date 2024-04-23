@@ -4,7 +4,7 @@ sys.path.append(os.path.abspath('.'))
 
 from data_management.DataManager import CALFData, collateGCN
 import torch 
-from Model import ContextAwareModel
+from Model import ContextAwareNetVladTemporal
 from helpers.loss import ContextAwareLoss
 from modules.train import trainer
 import pickle
@@ -39,13 +39,13 @@ class Args:
     
     # SEGMENTATION MODULE
     feature_multiplier=1
-    backbone_player = "GAT"
+    backbone_player = "GCN"
     load_weights=None
     model_name="Testing_Model"
     dim_capsule=16
     # VLAD pooling if applicable
-    vocab_size=None
-    pooling=None
+    vocab_size=16
+    pooling="NetVLAD"
 
     # SPOTTING MODULE
     sgementation_path = None
@@ -65,7 +65,7 @@ def main():
     validate_loader = torch.utils.data.DataLoader(validation_dataset,
                 batch_size=args.batch_size, shuffle=True, collate_fn=collate_fn)
 
-    model = ContextAwareModel(args=args)
+    model = model = ContextAwareNetVladTemporal(args=args)
     criterion = ContextAwareLoss(K=train_dataset.K_parameters)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.LR, 
@@ -79,11 +79,11 @@ def main():
                         criterion,
                         model_name=args.model_name,
                         max_epochs=args.max_epochs, 
-                        save_dir=f"/project_antwerp/models/backbone_GAT.pth.tar")
+                        save_dir=f"/project_antwerp/models/CALF_NetVLAD_GCN_temporal.pth.tar")
 
     del train_dataset, validation_dataset, train_loader, validate_loader
 
-    with open(f'/project_antwerp/results/backbone_GAT.pkl', 'wb') as file:
+    with open(f'/project_antwerp/results/CALF_NetVLAD_GCN_temporal.pkl', 'wb') as file:
         pickle.dump(losses, file)
 
 

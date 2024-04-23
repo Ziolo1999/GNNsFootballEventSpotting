@@ -120,8 +120,5 @@ class Evaluator():
             mAP_results[ann+1] = mAP_score
         
         return mAP_results
-
-
-
-
+ 
 

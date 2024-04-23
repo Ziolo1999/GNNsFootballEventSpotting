@@ -7,7 +7,6 @@ from typing import Union
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
-import logging
 import numpy as np
 import random
 import os
@@ -15,7 +14,7 @@ import logging
 from scipy.stats import norm
 
 from helpers.classes import EVENT_DICTIONARY_V2_ALIVE
-from helpers.preprocessing import oneHotToShifts, getTimestampTargets, getChunks_anchors, getTargets, generate_artificial_targets
+from helpers.preprocessing import oneHotToShifts, getChunks_anchors, getTargets, generate_artificial_targets
 
 import torch
 from torch.utils.data import Dataset
@@ -23,7 +22,6 @@ from torch_geometric.data import Data
 from torch_geometric.data import Batch
 
 import copy
-from dataclasses import dataclass
 
     
 class CALFData(Dataset):
@@ -41,14 +39,14 @@ class CALFData(Dataset):
         self.args = args
         # Gather football data from files
         logging.info("Preprocessing Data")
-        self.listGames = find_files("../football_games")
+        self.listGames = find_files(args.datapath)
 
         if split == "train":
-            DM = DataManager(files=self.listGames[2:12], framerate=args.fps/25, alive=False)
+            DM = DataManager(files=self.listGames[4:12], framerate=args.fps/25, alive=False)
         elif split == "validate":
-            DM = DataManager(files=self.listGames[0:2], framerate=args.fps/25, alive=False)
+            DM = DataManager(files=self.listGames[0:4], framerate=args.fps/25, alive=False)
         elif split == "calibrate":
-            DM = DataManager(files=self.listGames[1:2], framerate=args.fps/25, alive=False)
+            DM = DataManager(files=self.listGames[3:4], framerate=args.fps/25, alive=False)
         
         DM.read_games(focused_annotation=args.focused_annotation, 
                       generate_augmented_data=args.generate_augmented_data)
@@ -239,7 +237,6 @@ class DataManager():
             self.ball_coords = []
 
         for f in tqdm(self.files, desc="Data preprocessing"):
-            logging.info(f"Reading file {f.datafile}")
             # Opens dataset
             dataset = DatasetPreprocessor(self.framerate, f.name, self.alive)
             dataset._open_dataset(f.datafile, f.metafile, f.annotatedfile)
@@ -292,7 +289,6 @@ class DataManager():
         """
         games_violated = []
         for f in tqdm(self.files, desc="Player violation"):
-            logging.info(f"Reading {f.name} game")
             dataset = DatasetPreprocessor(self.framerate, f.home, self.alive)
             dataset._open_dataset(f.datafile, f.metafile)
             frame_nr = len(dataset._player_violation())

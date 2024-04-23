@@ -16,6 +16,10 @@ from torch_geometric.nn.models import GAT, GIN, GCN
 from torch_geometric.nn import GENConv, DeepGCNLayer
 from torch_geometric.nn import global_max_pool, global_mean_pool
 
+###########################################################################
+#                          SEGMENTATION MODULES                           #
+###########################################################################
+
 class ContextAwareNetVladTemporal(nn.Module):
     def __init__(self, num_classes=3, args=None):
         """
@@ -273,7 +277,6 @@ class ContextAwareNetVladTemporal(nn.Module):
         vlad_output = vlad_output.permute((0,2,1))
         vlad_output = vlad_output.unsqueeze(-1)
         return vlad_output
-
 
 class ContextAwareNetVladGlobal(nn.Module):
     def __init__(self, num_classes=3, args=None):
@@ -540,105 +543,6 @@ class ContextAwareNetVladGlobal(nn.Module):
         vlad_output = vlad_output.unsqueeze(-1) # BSxFSxTx1
         return vlad_output
 
-
-class SpottingModel(nn.Module):
-    def __init__(self, args=None):
-        """
-        INPUT: a Tensor of the form (batch_size,1,chunk_size,input_size)
-        OUTPUTS: The spotting output with a shape (batch_size,chunk_size-receptive_field,num_classes)
-        """
-        super(SpottingModel, self).__init__()
-
-        self.args = args
-        self.num_classes = args.annotation_nr # Additional None annotation to use softmax
-        self.dim_capsule = args.dim_capsule
-        self.receptive_field = args.receptive_field*args.fps
-        self.chunk_size = args.chunk_size*args.fps
-        self.fps = args.fps
-        self.input_channel = args.input_channel
-
-        # ---------------------------------
-        # Initialize the segmentation model
-        # ---------------------------------
-
-        self.model = torch.load(args.sgementation_path)
-        self.model.eval()
-        if args.freeze_model:
-            for param in self.model.parameters():
-                param.requires_grad = False
-
-        # -------------------
-        # Spotting layers
-        # ------------------- 
-
-        # Apply pooling to smooth results for 1s each 
-        self.max_pool_smooth = nn.MaxPool1d(kernel_size=self.fps*2+1, stride=self.fps, padding=4)
-        # Captures the whole context
-        # self.conv1d_layer_1 = nn.Conv1d(in_channels=self.num_classes-1, out_channels=2*self.num_classes, kernel_size=self.chunk_size/self.fps, stride=1, padding=0)
-        self.global_avg_pooling = nn.AdaptiveAvgPool1d(1)
-
-        # Further convolutions layers
-        self.conv1d_layer_1 = nn.Conv1d(in_channels=self.num_classes, out_channels=2*self.num_classes, kernel_size=5, stride=1, padding=2)
-        self.conv1d_layer_2 = nn.Conv1d(in_channels=2*self.num_classes, out_channels=4*self.num_classes, kernel_size=5, stride=1, padding=2)
-        self.conv1d_layer_3 = nn.Conv1d(in_channels=4*self.num_classes, out_channels=8*self.num_classes, kernel_size=5, stride=1, padding=2)
-        self.dropout = nn.Dropout(p=0.2)
-
-        # Classifier
-    
-        self.classifier = nn.Conv1d(in_channels=15*self.num_classes, out_channels=self.num_classes, kernel_size=1)
-        # self.layer_normalisation = nn.LayerNorm(self.num_classes) 
-
-    def forward(self, representation):
-
-        # -------------------
-        # Segmentation model
-        # -------------------
-        segmentation_output = self.model(representation)
-        # Reverse the output to get the probabilities
-        reversed_segmentation = 1 - segmentation_output
-        # Remove the receptive field 
-        main_field_segmentation = reversed_segmentation[:, int(self.receptive_field/2):-int(self.receptive_field/2), :]
-        # Adjust the size for applying convolution layers
-        reshaped_segmentation = main_field_segmentation.permute(0,2,1)
-        # print("Smoothing size: ", reshaped_segmentation.size())
-
-        # -------------------
-        # Spotting layers
-        # ------------------- 
-        
-        # Smoothen contextual information
-        max_pool_smooth = self.max_pool_smooth(F.relu(reshaped_segmentation))
-        # print("Smoothing size: ", max_pool_smooth.size())
-        
-        # Get the whole context
-        # conv1d_layer_1 = self.conv1d_layer_1(self.dropout(max_pool_smooth))
-        # conv1d_layer_1 = conv1d_layer_1.repeat_interleave(max_pool_smooth.shape[2], dim=2)
-        global_avg_pooling = self.global_avg_pooling(F.relu(reshaped_segmentation))
-        global_avg_pooling = global_avg_pooling.expand(-1, -1, max_pool_smooth.shape[2])
-        # print("Whole context size: ", global_avg_pooling.size())
-
-        # Get more detailed information
-        conv1d_layer_1 = self.conv1d_layer_1(self.dropout(max_pool_smooth))
-        # print("Conv1d_layer_2 size: ", conv1d_layer_2.size())
-
-        conv1d_layer_2 = self.conv1d_layer_2(self.dropout(F.relu(conv1d_layer_1)))
-        # print("Conv1d_layer_3 size: ", conv1d_layer_3.size())
-        
-        conv1d_layer_3 = self.conv1d_layer_3(self.dropout(F.relu(conv1d_layer_2)))
-        # print("Conv1d_layer_4 size: ", conv1d_layer_4.size())
-
-        # Concatenated information
-        concatenation = torch.cat((global_avg_pooling, conv1d_layer_1, conv1d_layer_2, conv1d_layer_3), dim=1)
-
-        # Classification
-        spotting_output = self.classifier(self.dropout(F.relu(concatenation)))
-
-        # Layer normalisation
-        # spotting_output = self.layer_normalisation(spotting_output)
-
-        return spotting_output.permute(0,2,1)
-
-
 class ContextAwareModel(nn.Module):
     def __init__(self, num_classes=3, args=None):
         """
@@ -799,7 +703,6 @@ class ContextAwareModel(nn.Module):
 
             self.lin = nn.Linear(hidden_channels, output_channel)
 
-
     def forward_GNN(self, representation_inputs):
         BS = self.args.batch_size
         T = self.chunk_size
@@ -862,58 +765,6 @@ class ContextAwareModel(nn.Module):
         r_concatenation = x
 
         return r_concatenation
-
-
-class NetVLADModel(nn.Module):
-    def __init__(self, weights=None, input_size=512, num_classes=17, vocab_size=64, window_size=15, framerate=2, pool="NetVLAD"):
-        """
-        INPUT: a Tensor of shape (batch_size,window_size,feature_size)
-        OUTPUTS: a Tensor of shape (batch_size,num_classes+1)
-        """
-        super(NetVLADModel, self).__init__()
-
-        self.window_size_frame=window_size * framerate
-        self.input_size = input_size
-        self.num_classes = num_classes
-        self.framerate = framerate
-        self.pool = pool
-        self.vlad_k = vocab_size
-
-        if self.pool == "NetVLAD":
-            self.pool_layer = NetVLAD(cluster_size=self.vlad_k, feature_size=self.input_size,
-                                            add_batch_norm=True)
-            self.fc = nn.Linear(input_size*self.vlad_k, self.num_classes+1)
-
-        elif self.pool == "NetRVLAD":
-            self.pool_layer = NetRVLAD(cluster_size=self.vlad_k, feature_size=self.input_size,
-                                            add_batch_norm=True)
-            self.fc = nn.Linear(input_size*self.vlad_k, self.num_classes+1)
-
-        self.drop = nn.Dropout(p=0.4)
-        self.sigm = nn.Sigmoid()
-
-        self.load_weights(weights=weights)
-
-    def load_weights(self, weights=None):
-        if(weights is not None):
-            print("=> loading checkpoint '{}'".format(weights))
-            checkpoint = torch.load(weights)
-            self.load_state_dict(checkpoint['state_dict'])
-            print("=> loaded checkpoint '{}' (epoch {})"
-                  .format(weights, checkpoint['epoch']))
-
-    def forward(self, inputs):
-        # input_shape: (batch,frames,dim_features)
-
-
-        BS, FR, IC = inputs.shape
-        inputs_pooled = self.pool_layer(inputs)
-
-        # Extra FC layer with dropout and sigmoid activation
-        output = self.sigm(self.fc(self.drop(inputs_pooled)))
-
-        return output
-
 
 class BaseContextAwareModel(nn.Module):
     def __init__(self, num_classes=3, args=None):
@@ -1387,4 +1238,306 @@ class BaseContextAwareModel(nn.Module):
 
         return r_concatenation
     
+###########################################################################
+#                             SPOTTING MODULES                            #
+###########################################################################
 
+class SpottingModel(nn.Module):
+    def __init__(self, args=None):
+        """
+        INPUT: a Tensor of the form (batch_size,1,chunk_size,input_size)
+        OUTPUTS: The spotting output with a shape (batch_size,chunk_size-receptive_field,num_classes)
+        """
+        super(SpottingModel, self).__init__()
+
+        self.args = args
+        self.num_classes = args.annotation_nr 
+        self.dim_capsule = args.dim_capsule
+        self.receptive_field = args.receptive_field*args.fps
+        self.chunk_size = args.chunk_size*args.fps
+        self.fps = args.fps
+        self.input_channel = args.input_channel
+
+        # ---------------------------------
+        # Initialize the segmentation model
+        # ---------------------------------
+
+        self.model = torch.load(args.sgementation_path)
+        self.model.eval()
+        if args.freeze_model:
+            for param in self.model.parameters():
+                param.requires_grad = False
+
+        # -------------------
+        # Spotting layers
+        # ------------------- 
+
+        # Apply pooling to smooth results for 1s each 
+        self.max_pool_smooth = nn.MaxPool1d(kernel_size=self.fps*2+1, stride=self.fps, padding=4)
+        # Captures the whole context
+        # self.conv1d_layer_1 = nn.Conv1d(in_channels=self.num_classes-1, out_channels=2*self.num_classes, kernel_size=self.chunk_size/self.fps, stride=1, padding=0)
+        self.global_avg_pooling = nn.AdaptiveAvgPool1d(1)
+
+        # Further convolutions layers
+        self.conv1d_layer_1 = nn.Conv1d(in_channels=self.num_classes, out_channels=2*self.num_classes, kernel_size=5, stride=1, padding=2)
+        self.conv1d_layer_2 = nn.Conv1d(in_channels=2*self.num_classes, out_channels=4*self.num_classes, kernel_size=5, stride=1, padding=2)
+        self.conv1d_layer_3 = nn.Conv1d(in_channels=4*self.num_classes, out_channels=8*self.num_classes, kernel_size=5, stride=1, padding=2)
+        self.dropout = nn.Dropout(p=0.2)
+
+        # Classifier
+    
+        self.classifier = nn.Conv1d(in_channels=15*self.num_classes, out_channels=self.num_classes, kernel_size=1)
+        # self.layer_normalisation = nn.LayerNorm(self.num_classes) 
+
+    def forward(self, representation):
+
+        # -------------------
+        # Segmentation model
+        # -------------------
+        segmentation_output = self.model(representation)
+        # Reverse the output to get the probabilities
+        reversed_segmentation = 1 - segmentation_output
+        # Remove the receptive field 
+        main_field_segmentation = reversed_segmentation[:, int(self.receptive_field/2):-int(self.receptive_field/2), :]
+        # Adjust the size for applying convolution layers
+        reshaped_segmentation = main_field_segmentation.permute(0,2,1)
+        # print("Smoothing size: ", reshaped_segmentation.size())
+
+        # -------------------
+        # Spotting layers
+        # ------------------- 
+        
+        # Smoothen contextual information
+        max_pool_smooth = self.max_pool_smooth(F.relu(reshaped_segmentation))
+        # print("Smoothing size: ", max_pool_smooth.size())
+        
+        # Get the whole context
+        # conv1d_layer_1 = self.conv1d_layer_1(self.dropout(max_pool_smooth))
+        # conv1d_layer_1 = conv1d_layer_1.repeat_interleave(max_pool_smooth.shape[2], dim=2)
+        global_avg_pooling = self.global_avg_pooling(F.relu(reshaped_segmentation))
+        global_avg_pooling = global_avg_pooling.expand(-1, -1, max_pool_smooth.shape[2])
+        # print("Whole context size: ", global_avg_pooling.size())
+
+        # Get more detailed information
+        conv1d_layer_1 = self.conv1d_layer_1(self.dropout(max_pool_smooth))
+        # print("Conv1d_layer_2 size: ", conv1d_layer_2.size())
+
+        conv1d_layer_2 = self.conv1d_layer_2(self.dropout(F.relu(conv1d_layer_1)))
+        # print("Conv1d_layer_3 size: ", conv1d_layer_3.size())
+        
+        conv1d_layer_3 = self.conv1d_layer_3(self.dropout(F.relu(conv1d_layer_2)))
+        # print("Conv1d_layer_4 size: ", conv1d_layer_4.size())
+
+        # Concatenated information
+        concatenation = torch.cat((global_avg_pooling, conv1d_layer_1, conv1d_layer_2, conv1d_layer_3), dim=1)
+
+        # Classification
+        spotting_output = self.classifier(self.dropout(F.relu(concatenation)))
+
+        # Layer normalisation
+        # spotting_output = self.layer_normalisation(spotting_output)
+
+        return spotting_output.permute(0,2,1)
+
+class EnsembleSpottingModel(nn.Module):
+    def __init__(self, ensemble_models, args=None):
+        """
+        INPUT: a Tensor of the form (batch_size,1,chunk_size,input_size)
+        OUTPUTS: The spotting output with a shape (batch_size,chunk_size-receptive_field,num_classes)
+        """
+        super(EnsembleSpottingModel, self).__init__()
+
+        self.args = args
+        self.num_classes = args.annotation_nr 
+        self.dim_capsule = args.dim_capsule
+        self.receptive_field = args.receptive_field*args.fps
+        self.chunk_size = args.chunk_size*args.fps
+        self.fps = args.fps
+        self.input_channel = args.input_channel
+
+        # ---------------------------------
+        # Initialize segmentation models
+        # ---------------------------------
+        self.models = []
+        for model_path, update in ensemble_models:
+            # Load model
+            model = torch.load(model_path)
+            # Update models arguments
+            for key, value in update.items():
+                setattr(model.args, key, value)
+            self.models.append(model)
+             
+        
+        if args.freeze_model:
+            for model in self.models:
+                for param in model.parameters():
+                    param.requires_grad = False
+
+        # -------------------
+        # Spotting layers
+        # ------------------- 
+
+        # Apply pooling to smooth results for 1s each 
+        self.max_pool_smooth = nn.MaxPool2d(kernel_size=(self.fps*2+1,1), stride=(self.fps, 1), padding=(4,0))
+        # Captures the whole context
+        # self.conv1d_layer_1 = nn.Conv1d(in_channels=self.num_classes-1, out_channels=2*self.num_classes, kernel_size=self.chunk_size/self.fps, stride=1, padding=0)
+        self.global_avg_pooling = nn.AdaptiveAvgPool1d(1)
+
+        # Further convolutions layers
+        self.conv2d_layer_1 = nn.Conv2d(in_channels=self.num_classes, out_channels=2*self.num_classes, kernel_size=(5,1), stride=1, padding=(2,0))
+        self.conv2d_layer_2 = nn.Conv2d(in_channels=2*self.num_classes, out_channels=4*self.num_classes, kernel_size=(5,1), stride=1, padding=(2,0))
+        self.conv2d_layer_3 = nn.Conv2d(in_channels=4*self.num_classes, out_channels=8*self.num_classes, kernel_size=(5,1), stride=1, padding=(2,0))
+        self.dropout = nn.Dropout(p=0.2)
+
+        # Classifier
+        self.classifier = nn.Conv2d(in_channels=15*self.num_classes, out_channels=self.num_classes, kernel_size=(1,1))
+        self.layer_normalisation = nn.LayerNorm([args.chunk_size-args.receptive_field, len(self.models)]) 
+
+    def forward(self, representation):
+
+        # -------------------
+        # Segmentation model
+        # -------------------
+        # Generate models outputs
+        segmentations_outputs = torch.empty((self.args.batch_size, self.chunk_size, self.num_classes, 0))
+        for model in self.models:
+            segmentation_output = model(representation)
+            segmentation_output = segmentation_output.unsqueeze(-1)
+            segmentations_outputs = torch.cat((segmentations_outputs, segmentation_output), dim=-1)
+        print("Segmentation outputs size:", {segmentations_outputs.shape})
+        
+        # Reverse the output to get the probabilities
+        reversed_segmentation = 1 - segmentations_outputs
+        # Remove the receptive field 
+        main_field_segmentation = reversed_segmentation[:, int(self.receptive_field/2):-int(self.receptive_field/2), :, :]
+        # Adjust the size for applying convolution layers
+        permuted_segmentation = main_field_segmentation.permute(0,2,1,3)
+        print("Permuted segmentation size: ", permuted_segmentation.size())
+
+        # -------------------
+        # Spotting layers
+        # ------------------- 
+        
+        # Smoothen contextual information
+        max_pool_smooth = self.max_pool_smooth(F.relu(permuted_segmentation))
+        print("Smoothing size: ", max_pool_smooth.size())
+        
+        # Get the whole context
+        # conv1d_layer_1 = self.conv1d_layer_1(self.dropout(max_pool_smooth))
+        # conv1d_layer_1 = conv1d_layer_1.repeat_interleave(max_pool_smooth.shape[2], dim=2)
+        reshaped_segmentation = permuted_segmentation.reshape(-1, permuted_segmentation.shape[1], permuted_segmentation.shape[2])
+        print("Reshaped_segmentation size: ", reshaped_segmentation.size())
+        global_avg_pooling = self.global_avg_pooling(F.relu(reshaped_segmentation))
+        print("Global_avg_pooling size: ", reshaped_segmentation.size())
+
+        # Get back models dimension
+        global_avg_pooling = global_avg_pooling.reshape(permuted_segmentation.shape[0], permuted_segmentation.shape[3], permuted_segmentation.shape[1], 1)
+        print("Reshaped global_avg_pooling size: ", reshaped_segmentation.size())
+        global_avg_pooling = global_avg_pooling.permute(0, 2, 3, 1)
+        print("Permuted global_avg_pooling size: ", reshaped_segmentation.size())
+
+        global_avg_pooling = global_avg_pooling.expand(-1, -1, max_pool_smooth.shape[2], -1)
+        print("Whole context size: ", global_avg_pooling.size())
+
+        # Get more detailed information
+        conv2d_layer_1 = self.conv2d_layer_1(self.dropout(max_pool_smooth))
+        print("Conv1d_layer_2 size: ", conv2d_layer_1.size())
+
+        conv2d_layer_2 = self.conv2d_layer_2(self.dropout(F.relu(conv2d_layer_1)))
+        print("Conv2d_layer_2 size: ", conv2d_layer_2.size())
+        
+        conv2d_layer_3 = self.conv2d_layer_3(self.dropout(F.relu(conv2d_layer_2)))
+        print("Conv2d_layer_3 size: ", conv2d_layer_3.size())
+
+        # Concatenated information
+        concatenation = torch.cat((global_avg_pooling, conv2d_layer_1, conv2d_layer_2, conv2d_layer_3), dim=1)
+        print("Concatenation size: ", conv2d_layer_3.size())
+
+        # Classification
+        spotting_output = self.classifier(self.dropout(F.relu(concatenation)))
+        print("Spotting size: ", conv2d_layer_3.size())
+
+        # Layer normalisation
+        spotting_output = self.layer_normalisation(spotting_output)
+        print("Normalisation size: ", conv2d_layer_3.size())
+
+        # Mean results
+        spotting_output = torch.mean(spotting_output, dim=3)
+        print("Average probability size: ", conv2d_layer_3.size())
+
+        return spotting_output.permute(0,2,1)
+    
+# from dataclasses import dataclass
+# from helpers.classes import get_K_params
+# @dataclass
+# class Args:
+#     # DATA
+#     chunk_size = 60
+#     batch_size = 32
+#     input_channel = 13
+#     annotation_nr = 10
+#     receptive_field = 12
+#     fps = 5
+#     K_parameters = get_K_params(chunk_size)
+#     focused_annotation = None
+#     generate_augmented_data = True
+#     class_split = "alive"
+#     generate_artificial_targets = False
+    
+#     # TRAINING
+#     chunks_per_epoch = 1824
+#     lambda_coord=5.0
+#     lambda_noobj=0.5
+#     patience=25
+#     LR=1e-03
+#     max_epochs=180
+#     GPU=0 
+#     max_num_worker=1
+#     loglevel='INFO'
+    
+#     # SEGMENTATION MODULE
+#     feature_multiplier=1
+#     backbone_player = "GCN"
+#     load_weights=None
+#     model_name="Testing_Model"
+#     dim_capsule=16
+#     # VLAD pooling if applicable
+#     vocab_size=None
+#     pooling=None
+
+#     # SPOTTING MODULE
+#     sgementation_path = None
+#     freeze_model = True
+#     spotting_fps = 1
+#     ensemble_models = [
+#         "models/edge_attr_GCN.pth.tar",
+#         "models/backbone_GIN.pth.tar"
+#     ]
+
+
+# GCN_updates = {"backbone_player":"GCN"}
+# GIN_updates = {"backbone_player":"GIN"}
+
+# ensemble_models = [
+#     ("models/edge_attr_GCN.pth.tar", GCN_updates),
+#     ("models/backbone_GIN.pth.tar", GIN_updates)
+#     ]
+
+# for (model_path, arg) in ensemble_models:
+#     args = arg
+#     model = torch.load(model_path)
+# args = Args()
+# model = torch.load(ensemble_models[1][0])
+# model.args.backbone_player = "GIN"
+# model(x)
+# del Args
+# from data_management.DataManager import CALFData, collateGCN
+# args = Args()
+# model = EnsembleSpottingModel(ensemble_models, args=args)
+# collate_fn = collateGCN
+# train_dataset = CALFData(split="train", args=args)
+# train_loader = torch.utils.data.DataLoader(train_dataset,
+#             batch_size=args.batch_size, shuffle=True, collate_fn=collate_fn)
+
+# _,_,x = next(iter(train_loader))
+# res = model(x)

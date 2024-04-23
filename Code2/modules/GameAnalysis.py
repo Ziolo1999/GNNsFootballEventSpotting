@@ -16,7 +16,8 @@ import pandas as pd
 import torch.nn.functional as F
 from scipy.stats import norm
 import pickle
-# from helpers.settings import Args
+from tqdm import tqdm
+from sklearn.metrics import auc
 
 class AnalysisDataset(Dataset):
     def __init__(self, args, game_index=0):
@@ -147,10 +148,14 @@ class GamaAnalysis():
         
         if seg_model:
             max_frame = int(np.min([self.segmentation.shape[0], self.annotations.shape[0]]))
-            return self.segmentation[:max_frame,:], self.annotations[:max_frame,:]
+            self.segmentation = self.segmentation[:max_frame,:]
+            self.annotations = self.annotations[:max_frame,:]
+            return self.segmentation, self.annotations
         else:
             max_frame = int(np.min([self.spotting.shape[0], self.annotations.shape[0]]))
-            return self.spotting[:max_frame,:], self.annotations[:max_frame,:]
+            self.spotting = self.spotting[:max_frame,:]
+            self.annotations = self.annotations[:max_frame,:]
+            return self.spotting, self.annotations
 
     def visualize(self, frame_threshold=None, save_dir=None, interval=1, annotation="Shot"):
         pitch = Pitch(pitch_color='grass', line_color='white', stripe=True)
@@ -244,7 +249,6 @@ class GamaAnalysis():
 
     def plot_predictions(self, frame_threshold=None, save_dir=None, annotation="Shot"):
         # Set the smoothing rate
-
         if annotation is None:
             cols = 2
             rows = int(np.ceil(self.args.annotation_nr)/2)
@@ -300,7 +304,13 @@ class GamaAnalysis():
         precisions, recalls, f1_scores = norm_evaluation_segmentation(annotations, self.segmentation, self.args, ann=ann)
         return precisions, recalls, f1_scores 
     
-    def all_test_games_evaluation(self, args, last_game_index=2, seg_model=True, calibrate=False):
+    def precision_recall_f1(self, pred_threshold=0.6, error_margin=0):
+        return precision_recall_f1_score(self.spotting, self.annotations, pred_threshold=pred_threshold, error_margin=error_margin)
+    
+    def ROC_AUC(self,error_margin=0):
+        return draw_ROC_curve(self.spotting, self.annotations, error_margin=error_margin)
+    
+    def all_test_games_evaluation(self, args, last_game_index=2, seg_model=True, calibrate=False, type_eval="segmentation_evaluation"):
         all_results = np.empty((0, self.args.annotation_nr))
         all_annotations = np.empty((0, self.args.annotation_nr))
 
@@ -309,12 +319,70 @@ class GamaAnalysis():
             all_results = np.concatenate((all_results, results), axis=0)
             all_annotations = np.concatenate((all_annotations, annotations), axis=0)
         
-        if seg_model:
+        if type_eval=="segmentation_evaluation":
             return norm_evaluation_segmentation(all_annotations, all_results, args, ann=None)
-        else:
+        elif type_eval=="map_evaluation":
             return calculate_MAP(all_annotations, all_results)
+        elif type_eval=="clip_based_precision_recall":
+            return precision_recall_f1_score(all_results, all_annotations, pred_threshold=0.6, error_margin=0)
+        elif type_eval=="clip_based_ROC_AUC":
+            return draw_ROC_curve(all_results, all_annotations, error_margin=0)
 
+class Evaluator():
+    def __init__(self, args, model, test_loader, calibrate=True):
+        self.args = args
+        self.model = model
+        self.test_loader = test_loader
 
+        self.all_targets = torch.empty((0,self.args.annotation_nr))
+        self.all_outputs = torch.empty((0,self.args.annotation_nr))
+        
+        epochs = self.args.max_epochs
+        # Generate predictions
+        with tqdm(range(epochs), total=epochs) as t:
+            desc = "Generating predictions for evaluation:"
+            t.set_description(desc=desc)
+
+            for _ in t:
+                for _, targets, representations in self.test_loader:
+                    outputs = self.model(representations)
+                    outputs = F.sigmoid(outputs)
+                    outputs = outputs.reshape(-1,self.args.annotation_nr)
+                    self.all_outputs = torch.cat((self.all_outputs, outputs), dim=0)
+                    
+                    targets = targets.reshape(-1,self.args.annotation_nr)
+                    self.all_targets = torch.cat((self.all_targets, targets), dim=0)
+        # To numpy 
+        self.all_outputs = self.all_outputs.detach().numpy()
+        self.all_targets = self.all_targets.detach().numpy()
+
+        # Calibrate results
+        if calibrate:
+            for i, annotation_name in enumerate(ann_encoder.keys()):
+                calibration_model_name = f"calibrators/{annotation_name}_calibration.pkl"
+                calibration_model = pickle.load(open(calibration_model_name, 'rb'))
+                self.all_outputs[:,i] = calibration_model.predict_proba(self.all_outputs[:,i].reshape(-1, 1))[:, 1]
+    
+    def calculate_map(self):
+        
+        mAP_results = np.empty((self.all_outputs.shape[1]+1))
+        total_mAP = average_precision_score(self.all_targets, self.all_outputs, average='macro')
+
+        mAP_results[0] = total_mAP
+
+        for ann in range(self.all_targets.shape[1]):
+            gt = self.all_targets[:, ann]
+            pred = self.all_outputs[:, ann]
+            mAP_score = average_precision_score(gt, pred, average='macro')
+            mAP_results[ann+1] = mAP_score
+        
+        return mAP_results
+    
+    def precision_recall_f1(self, pred_threshold=0.6, error_margin=1):
+        return precision_recall_f1_score(self.all_targets, self.all_outputs, pred_threshold=pred_threshold, error_margin=error_margin)
+    
+    def ROC_AUC(self,error_margin=1):
+        return draw_ROC_curve(self.all_targets, self.all_outputs, error_margin=error_margin)
 
 def collateAnalysis(list_of_examples):
     return Batch.from_data_list([x for b in list_of_examples for x in b[0]]),\
@@ -332,8 +400,6 @@ def average_segmentation(segmentation_results, window):
     avg_segmentation = np.mean(exceeded_segmentation, axis=0, where=(exceeded_segmentation != 0))
     return avg_segmentation    
 
-
-
 def calculate_MAP(annotations, predictions):
         
     mAP_results = np.empty((annotations.shape[1]+1))
@@ -349,8 +415,8 @@ def calculate_MAP(annotations, predictions):
     return mAP_results
 
 def norm_evaluation_segmentation(annotations, segmentation, args, ann=None):
-    precisions = np.zeros(annotations.shape[1])
-    recalls = np.zeros(annotations.shape[1])
+    PORs = np.zeros(annotations.shape[1])
+    ACRs = np.zeros(annotations.shape[1])
     f1_scores = np.zeros(annotations.shape[1])
     total_targets = np.zeros(annotations.shape)
 
@@ -381,18 +447,176 @@ def norm_evaluation_segmentation(annotations, segmentation, args, ann=None):
         FP = np.sum(predictions - np.minimum(predictions, target))  # Excess in predicted
         FN = np.sum(target - np.minimum(predictions, target))  # Shortfall in actual
 
-        precision = TP / (TP + FP)
-        recall = TP / (TP + FN)
-        f1_score = 2 * (precision * recall) / (precision + recall)
+        POR = TP / (TP + FP)
+        ACR = TP / (TP + FN)
+        f1_score = 2 * (POR * ACR) / (POR + ACR)
 
-        precisions[ann] = precision
-        recalls[ann] = recall
+        PORs[ann] = POR
+        ACRs[ann] = ACR
         f1_scores[ann] = f1_score
 
 
-    return precisions, recalls, f1_scores 
-# calibration_model_name = f"calibrators/Duel_calibration.pkl"
-# calibration_model = pickle.load(open(calibration_model_name, 'rb'))
-# calibration_model
-# self.spotting[:,i] = calibration_model.predict_proba(self.spotting[:,i].reshape(-1, 1))[:, 1]
+    return PORs, ACRs, f1_scores 
 
+def precision_recall_f1_score(results, annotations, pred_threshold=0.6, error_margin=0):
+    TP, TN, FN, FP = get_event_evaluation(results, annotations, pred_threshold=pred_threshold, error_margin=error_margin)
+    
+    p = np.array(TP)/(np.array(TP) + np.array(FP))
+    r = np.array(TP)/(np.array(TP) + np.array(FN))
+    f1_score = 2*p*r/(p+r)
+
+    return p, r, f1_score
+
+def draw_ROC_curve(results, annotations, error_margin=1):
+    TPRs = np.empty((0, results.shape[1]))
+    FPRs = np.empty((0, results.shape[1]))
+
+    for threshold in range(0, 105, 1):
+        threshold/=100
+        TP, TN, FN, FP = get_event_evaluation(results, annotations, pred_threshold=threshold, error_margin=error_margin)
+        TPR = np.expand_dims(np.array(TP)/(np.array(TP) + np.array(FN)), 0)
+        FPR = np.expand_dims(np.array(FP)/(np.array(TN) + np.array(FP)), 0)
+        TPRs = np.concatenate((TPRs,TPR), axis=0)
+        FPRs = np.concatenate((FPRs,FPR), axis=0)
+    
+    cols = 2
+    rows = int(np.ceil(results.shape[1])/2)
+    fig, axes = plt.subplots(rows, cols, figsize=(10*cols, 5*rows))
+
+    for i, ax in enumerate(axes.flatten()):
+        ann = list(ann_encoder.keys())[i]
+        ax.plot(FPRs[:,i], TPRs[:, i])
+        ax.set_title(f"ROC curve: {ann}")
+        ax.set_facecolor('lightgray') 
+        ax.grid(True, color='white')
+        ax.fill_between(FPRs[:,i], TPRs[:, i], alpha=0.5)
+    
+    AUC = [auc(FPRs[:,i], TPRs[:,i]) for i in range(FPRs.shape[1])]
+    return AUC
+
+def interpolate_matrix(data):
+    for ann in range(data.shape[1]):
+        for i in range(1, data.shape[0]-1): 
+            if (data[i - 1, ann] == 1) and (data[i + 1, ann] == 1):
+                data[i, ann] = 1
+    return data
+
+def find_events_in_column(column):
+    # Calculate differences between consecutive elements in the column
+    diffs = np.diff(column)
+
+    # Starts of patterns are where the diff is 1 (0 to 1 transition)
+    starts = np.where(diffs == 1)[0] + 1
+    
+    # Ends of patterns are where the diff is -1 (1 to 0 transition)
+    ends = np.where(diffs == -1)[0]
+    
+    # If column starts with 1, prepend the first index
+    if column[0] == 1:
+        starts = np.insert(starts, 0, 0)
+    
+    # If column ends with 1, append the last index
+    if column[-1] == 1:
+        ends = np.append(ends, len(column) - 1)
+    
+    return starts, ends
+
+def find_negative_events_in_column(column, min_length=5):
+    # Calculate differences between consecutive elements in the column
+    diffs = np.diff(column)
+
+    # Starts of zero patterns are where the diff is -1 (1 to 0 transition)
+    starts = np.where(diffs == -1)[0] + 1
+    
+    # Ends of zero patterns are where the diff is 1 (0 to 1 transition)
+    ends = np.where(diffs == 1)[0]
+    
+    # If column starts with 0, prepend the first index
+    if column[0] == 0:
+        starts = np.insert(starts, 0, 0)
+    
+    # If column ends with 0, append the last index
+    if column[-1] == 0:
+        ends = np.append(ends, len(column) - 1)
+    
+    # Filter divide events to include only those that are at least `min_length` long
+    start_list = []
+    end_list = []
+    for start, end in zip(starts, ends):
+        length = end - start + 1
+        if length >= min_length:
+            event_count_ceil = int(np.ceil(length/min_length))
+            event_count_floor = int(np.floor(length/min_length))
+            for i in range(event_count_ceil):
+                start_list.append(start+i*min_length)
+                max_end = np.max([0,(event_count_floor-i)*min_length-1])
+                end_list.append(end-max_end)
+
+    
+    return np.array(start_list), np.array(end_list)
+
+def find_events_matrix(matrix, type_event=1):
+    # Initialize lists to hold start and end indices for all columns
+    all_starts = []
+    all_ends = []
+    
+    # Iterate over each column in the matrix
+    for i in range(matrix.shape[1]): 
+        column = matrix[:, i]  
+        if type_event == 1:
+            starts, ends = find_events_in_column(column)
+        else:
+            starts, ends = find_negative_events_in_column(column)
+        all_starts.append(starts)
+        all_ends.append(ends)
+    
+    return all_starts, all_ends
+
+def get_event_evaluation(results, annotations, pred_threshold=0.6, error_margin=1):
+
+    # Interpolation of the annotations
+    # annotations_interpolated = interpolate_matrix(annotations)
+    annotations_interpolated = annotations
+    # Get binary predictions
+    results_binary = np.where((results>pred_threshold), 1,0)
+    results_interpolated = results_binary
+    # Interpolate results
+    # results_interpolated = interpolate_matrix(results_binary)
+
+    # Storage for eval metrics
+    TP = [0 for i in range(annotations.shape[1])]
+    TN = [0 for i in range(annotations.shape[1])]
+    FN = [0 for i in range(annotations.shape[1])]
+    FP = [0 for i in range(annotations.shape[1])]
+
+    # Update TP and TN
+    # Find events in annotations
+    starts, ends = find_events_matrix(annotations_interpolated)
+    for i, (start, end) in enumerate(zip(starts, ends)):
+        for (s, e) in zip(start, end):
+            adjusted_start = s-error_margin
+            adjusted_end = e+1+error_margin
+            # Get events
+            event = results_interpolated[adjusted_start:adjusted_end, i]
+            diff = np.ones(len(event)) - event
+            if np.any(diff==0):
+                TP[i] += 1
+            elif np.all(diff==1):
+                FN[i] += 1
+
+    # Update FP and TN
+    # Find events in results
+    starts, ends = find_events_matrix(annotations_interpolated, type_event=0)
+    for i, (start, end) in enumerate(zip(starts, ends)):
+        for (s, e) in zip(start, end):
+            adjusted_start = s+error_margin
+            adjusted_end = e+1-error_margin
+            # Get events
+            event = results_interpolated[adjusted_start:adjusted_end, i]
+            diff = np.zeros(len(event)) - event
+            if np.all(diff==0):
+                TN[i] += 1
+            elif np.any(diff==-1):
+                FP[i] += 1
+
+    return TP, TN, FN, FP
