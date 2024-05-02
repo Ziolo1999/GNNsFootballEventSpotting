@@ -42,7 +42,7 @@ class CALFData(Dataset):
         self.listGames = find_files(args.datapath)
 
         if split == "train":
-            DM = DataManager(files=self.listGames[4:12], framerate=args.fps/25, alive=False)
+            DM = DataManager(files=self.listGames[4:5], framerate=args.fps/25, alive=False)
         elif split == "validate":
             DM = DataManager(files=self.listGames[0:4], framerate=args.fps/25, alive=False)
         elif split == "calibrate":
@@ -63,6 +63,8 @@ class CALFData(Dataset):
             self.K_parameters = args.K_parameters*args.fps 
             self.num_classes = args.annotation_nr
         
+
+
         self.split=split
         
         # logging.info("Pre-compute clips")
@@ -149,7 +151,7 @@ class CALFData(Dataset):
             class_probs = [0.1/3] + [0.9/7]*7 + [0.1/3]*2
             class_selection = random.choices(np.arange(self.num_classes), weights=class_probs)[0]
         else:
-            class_selection = random.randint(0, self.num_classes-1)
+            class_selection = 0
 
         event_selection = random.randint(0, len(self.game_anchors[class_selection])-1)
         game_index = self.game_anchors[class_selection][event_selection][0]
@@ -169,7 +171,7 @@ class CALFData(Dataset):
         start = anchor + shift
         if self.args.focused_annotation:
             if random.random()<0.5:
-                start = random.randint(0, len(self.game_labels[game_index])-self.chunk_size)
+                start = random.randint(0, int(80*60*self.fps))
         
         # Extract the clips 
         if self.args.generate_artificial_targets:

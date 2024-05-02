@@ -10,3 +10,4 @@ torch-cluster
 torch-scatter 
 torch-spline-conv 
 tqdm
+opencv-python

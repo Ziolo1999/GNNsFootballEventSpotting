@@ -141,8 +141,14 @@ class GamaAnalysis():
 
         # # CALIBRATION STEP
         if calibrate:
+
+            if self.args.pooling is None:
+                calibration_type = self.args.backbone_player
+            else:
+                calibration_type = "NetVLAD"
+
             for i, annotation_name in enumerate(ann_encoder.keys()):
-                calibration_model_name = f"calibrators/{annotation_name}_calibration.pkl"
+                calibration_model_name = f"calibrators/{calibration_type}/{annotation_name}_calibration_{calibration_type}.pkl"
                 calibration_model = pickle.load(open(calibration_model_name, 'rb'))
                 self.spotting[:,i] = calibration_model.predict_proba(self.spotting[:,i].reshape(-1, 1))[:, 1]
         

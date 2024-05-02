@@ -6,25 +6,17 @@ from dataclasses import dataclass
 from helpers.classes import get_K_params
 from data_management.DataManager import CALFData, collateGCN
 import torch
-import cv2
-import matplotlib.pyplot as plt
 import numpy as np
-import matplotlib.gridspec as gridspec
 from helpers.classes import INVERSE_EVENT_DICTIONARY_V2_ALIVE as ann_encoder
-import matplotlib.animation as animation
-from matplotlib.animation import FFMpegWriter
-from mplsoccer.pitch import Pitch
 import argparse
-from tqdm import tqdm
-import time
 import pickle
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import brier_score_loss
-from sklearn.isotonic import IsotonicRegression
+
 
 @dataclass
 class Args:
     # DATA
+    datapath="/project_antwerp/football_games"
     chunk_size = 60
     batch_size = 32
     input_channel = 13
@@ -58,18 +50,58 @@ class Args:
     pooling=None
 
     # SPOTTING MODULE
-    sgementation_path = f"models/spotting_unfrozen_GCN.pth.tar"
+    sgementation_path = f"/project_antwerp/models/spotting_unfrozen_GCN.pth.tar"
     freeze_model = None
     spotting_fps = 1
+
+
+args_GCN = {
+    "backbone_player": "GCN",
+    "sgementation_path": "/project_antwerp/models/backbone_GCN.pth.tar",
+    "freeze_model": True
+}
+
+args_GIN = {
+    "backbone_player": "GIN",
+    "sgementation_path": "/project_antwerp/models/backbone_GIN.pth.tar",
+    "freeze_model": True
+}
+
+args_GAT = {
+    "backbone_player": "GAT",
+    "sgementation_path": "/project_antwerp/models/backbone_GAT.pth.tar",
+    "freeze_model": True
+}
+
+args_NetVLAD = {
+    "backbone_player": "GCN",
+    "sgementation_path": "/project_antwerp/models/CALF_NetVLAD_GCN_temporal.pth.tar",
+    "freeze_model": True,
+    "vocab_size": 16,
+    "pooling": "NetVLAD"
+}
+
+
+model_args_adj = {
+    "GCN": args_GCN, 
+    "GIN": args_GIN, 
+    "GAT": args_GAT, 
+    "NetVLAD": args_NetVLAD}
+@dataclass
+class sys_args:
+    model = "/models/spotting.pth.tar"
 
 def main():
 
     parser = argparse.ArgumentParser(prog="metric_visualiser", description="Visualise proposed metric")
     parser.add_argument("-m", "--model", help="The path to the base model")
+    parser.add_argument("-b", "--backbone", help="Type of the backbone")
     sys_args = parser.parse_args()
-
-
     args = Args
+
+    for key, value in model_args_adj[sys_args.backbone].items():
+        setattr(args, key, value)
+
     collate_fn = collateGCN
     calibration_dataset = CALFData(split="calibrate", args=args)
 
@@ -78,6 +110,8 @@ def main():
     
     model_path = sys_args.model
     model = torch.load(model_path)
+    for key, value in model_args_adj[sys_args.backbone].items():
+        setattr(model.args, key, value)
 
     predictions = []
     labels = []
@@ -110,7 +144,7 @@ def main():
         # calibrated_probabilities[:, class_index] = iso_reg.transform(predictions[:, class_index].reshape(-1, 1))
         
         # Save the calibration models
-        filename = f'calibrators/{ann_encoder[class_index]}_calibration.pkl'
+        filename = f'/project_antwerp/calibrators/{sys_args.backbone}/{ann_encoder[class_index]}_calibration_{sys_args.backbone}.pkl'
         pickle.dump(calibrator, open(filename, 'wb'))
         
         

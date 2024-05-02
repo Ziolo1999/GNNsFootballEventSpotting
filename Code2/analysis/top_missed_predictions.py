@@ -17,10 +17,12 @@ from mplsoccer.pitch import Pitch
 import argparse
 from tqdm import tqdm
 import time
+import torch_geometric
 
 @dataclass
 class Args:
     # DATA
+    datapath="/project_antwerp/football_games"
     chunk_size = 60
     batch_size = 32
     input_channel = 13
@@ -46,7 +48,7 @@ class Args:
     
     # SEGMENTATION MODULE
     feature_multiplier=1
-    backbone_player = "GCN"
+    backbone_player = "GAT"
     load_weights=None
     model_name="Testing_Model"
     dim_capsule=16
@@ -54,7 +56,7 @@ class Args:
     pooling=None
 
     # SPOTTING MODULE
-    sgementation_path = f"models/edge_attr_GCN.pth.tar"
+    sgementation_path = f"models/backbone_GAT.pth.tar"
     freeze_model = None
     spotting_fps = 1
 
@@ -71,7 +73,7 @@ def main():
     # Selected game Brasil vs Belgium WC2018
     args = Args
     model = torch.load(sys_args.model)
-    model = torch.load("models/spotting_unfrozen_GCN.pth.tar")
+    # model = torch.load("models/spotting_unfrozen_GCN.pth.tar")
     game_analyser = GamaAnalysis(args, model)
     results, annotations = game_analyser.predict_game(game_index=0, seg_model=False, calibrate=True, ann=None)
 

@@ -13,7 +13,4 @@ ADD Model.py Model.py
 ADD GPUtraining/ GPUtraining/
 
 # Run segmentation scripts.py
-CMD python GPUtraining/trainGCN.py
-CMD python GPUtraining/trainGAT.py
-CMD python GPUtraining/trainGIN.py
-CMD python GPUtraining/trainNetVladGCN.py
+# CMD python GPUtraining/trainGAT.py
