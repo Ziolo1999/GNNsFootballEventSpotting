@@ -42,7 +42,7 @@ class CALFData(Dataset):
         self.listGames = find_files(args.datapath)
 
         if split == "train":
-            DM = DataManager(files=self.listGames[4:5], framerate=args.fps/25, alive=False)
+            DM = DataManager(files=self.listGames[4:], framerate=args.fps/25, alive=False)
         elif split == "validate":
             DM = DataManager(files=self.listGames[0:4], framerate=args.fps/25, alive=False)
         elif split == "calibrate":

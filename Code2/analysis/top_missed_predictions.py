@@ -18,6 +18,7 @@ import argparse
 from tqdm import tqdm
 import time
 import torch_geometric
+import pickle
 
 @dataclass
 class Args:
@@ -215,6 +216,15 @@ def main():
                 t.set_description(desc=desc)
     
             capture.release()
+            
+            # Save predictions
+            with open(f"{sys_args.output}/{int(clip)}/predictions.pkl", 'wb') as f:
+                # Use pickle.dump to save the arrays
+                pickle.dump((
+                    game_analyser.spotting[lower_bound_spot:upper_bound_spot], 
+                    game_analyser.annotations[lower_bound_spot:upper_bound_spot]),f
+                    )
+
 
 def select_indices(indices, number):
     # List to hold the selected indices

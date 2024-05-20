@@ -127,22 +127,30 @@ def generate_annotations():
 
 
 
-    path = "football_games"
-    for tournament, games in annotations.items():
-        for game in games.keys():
-            game_path = f"{path}/{tournament}/{game}"
+    # path = "football_games"
+    # for tournament, games in annotations.items():
+    #     for game in games.keys():
+    #         game_path = f"{path}/{tournament}/{game}"
 
-            if not os.path.exists(game_path):
-                game_path = f"{path}/{tournament}/{game[4:7]}-{game[0:3]}{game[7:]}"
+    #         if not os.path.exists(game_path):
+    #             game_path = f"{path}/{tournament}/{game[4:7]}-{game[0:3]}{game[7:]}"
             
-            first_half_ann = annotations[tournament][game][0]
-            second_half_ann = annotations[tournament][game][1]
-            for root, dirs, files in os.walk(game_path):
-                np.savez(f"{root}/annotation.npz", array1=first_half_ann, array2=second_half_ann)
+    #         first_half_ann = annotations[tournament][game][0]
+    #         second_half_ann = annotations[tournament][game][1]
+    #         for root, dirs, files in os.walk(game_path):
+    #             np.savez(f"{root}/annotation.npz", array1=first_half_ann, array2=second_half_ann)
     return ann
 
 if __name__ == '__main__':
     annotations = generate_annotations()
+
+annotations.occurences
+selected_ann = {}
+for c in selected_classes:
+    selected_ann[c] = annotations.occurences[c]
+
+plt.figure(figsize=(12, 6))
+plt.barh(list(selected_ann.keys()), list(selected_ann.values()))
 
 # selected_classes = ['Pressure', 'Foul Committed', 'Ball Recovery', 'Duel', 'Shot', 'Dribble', 'Clearance', 'Goal Keeper', 'Pass']
 # selected_annotations_occurences = {ann: annotations.occurences[ann] for ann in selected_classes}

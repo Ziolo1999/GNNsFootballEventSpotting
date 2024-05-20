@@ -74,8 +74,6 @@ def trainer(train_loader,
         is_better = loss_validation < best_loss
         best_loss = min(loss_validation, best_loss)
 
-
-
         # Save the best model based on loss only if the evaluation frequency too long
         if is_better:
             model = model.to("cpu")
@@ -85,33 +83,6 @@ def trainer(train_loader,
         stopping_result = early_stopping.update(loss_validation)
         if stopping_result:
             break
-
-        # Test the model on the validation set
-        # if epoch % evaluation_frequency == 0 and epoch != 0:
-        #     with torch.no_grad():
-        #         performance_validation = test(
-        #             val_metric_loader,
-        #             model, 
-        #             model_name)
-
-                
-        #         performance_validation = performance_validation[0]
-        #         logging.info("Validation performance at epoch " + str(epoch+1) + " -> " + str(performance_validation))
-
-        #         is_better_metric = performance_validation > best_metric
-        #         best_metric = max(performance_validation,best_metric)
-
-
-        #         # Save the best model based on metric only if the evaluation frequency is short enough
-        #         if is_better_metric and evaluation_frequency <= max_epochs:
-        #             torch.save(state, best_model_path)
-        #             performance_test = test(
-        #                 test_loader,
-        #                 model, 
-        #                 model_name, save_predictions=True)
-        #             performance_test = performance_test[0]
-
-        #             logging.info("Test performance at epoch " + str(epoch+1) + " -> " + str(performance_test))
 
         # Learning rate scheduler update
         prevLR = optimizer.param_groups[0]['lr']
@@ -164,13 +135,13 @@ def train_segmentation(dataloader,
             representations = representations.to(labels.device)
 
             # compute output
-            model_start = time.time()
+            # model_start = time.time()
             output_segmentation = model(representations)
-            model_end = time.time()
+            # model_end = time.time()
 
-            seg_start = time.time()
+            # seg_start = time.time()
             loss_segmentation = criterion(labels, output_segmentation, device) 
-            seg_end = time.time()
+            # seg_end = time.time()
 
             # loss = weights[0]*loss_segmentation + weights[1]*loss_spotting
 
@@ -235,13 +206,13 @@ def train_spotting(dataloader,
             representations = representations.to(targets.device)
 
             # compute output
-            model_start = time.time()
+            # model_start = time.time()
             output_spotting = model(representations)
-            model_end = time.time()
+            # model_end = time.time()
 
-            seg_start = time.time()
+            # seg_start = time.time()
             loss_spotting = criterion(output_spotting, targets) 
-            seg_end = time.time()
+            # seg_end = time.time()
 
             # measure accuracy and record loss
             losses_spotting.update(loss_spotting.item())

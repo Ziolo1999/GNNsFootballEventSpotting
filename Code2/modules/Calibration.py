@@ -87,9 +87,6 @@ model_args_adj = {
     "GIN": args_GIN, 
     "GAT": args_GAT, 
     "NetVLAD": args_NetVLAD}
-@dataclass
-class sys_args:
-    model = "/models/spotting.pth.tar"
 
 def main():
 

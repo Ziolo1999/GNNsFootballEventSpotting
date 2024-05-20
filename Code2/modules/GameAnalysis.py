@@ -141,16 +141,21 @@ class GamaAnalysis():
 
         # # CALIBRATION STEP
         if calibrate:
-
-            if self.args.pooling is None:
-                calibration_type = self.args.backbone_player
-            else:
-                calibration_type = "NetVLAD"
-
-            for i, annotation_name in enumerate(ann_encoder.keys()):
-                calibration_model_name = f"calibrators/{calibration_type}/{annotation_name}_calibration_{calibration_type}.pkl"
+            if self.args.annotation_nr:
+                calibration_type = "fine_tuned"
+                calibration_model_name = f"calibrators/{calibration_type}/{self.args.focused_annotation}_calibration_{calibration_type}.pkl"
                 calibration_model = pickle.load(open(calibration_model_name, 'rb'))
-                self.spotting[:,i] = calibration_model.predict_proba(self.spotting[:,i].reshape(-1, 1))[:, 1]
+                self.spotting[:,0] = calibration_model.predict_proba(self.spotting[:,0].reshape(-1, 1))[:, 1]
+            else:
+                if self.args.pooling is None:
+                    calibration_type = self.args.backbone_player
+                else:
+                    calibration_type = "NetVLAD"
+
+                for i, annotation_name in enumerate(ann_encoder.keys()):
+                    calibration_model_name = f"calibrators/{calibration_type}/{annotation_name}_calibration_{calibration_type}.pkl"
+                    calibration_model = pickle.load(open(calibration_model_name, 'rb'))
+                    self.spotting[:,i] = calibration_model.predict_proba(self.spotting[:,i].reshape(-1, 1))[:, 1]
         
         if seg_model:
             max_frame = int(np.min([self.segmentation.shape[0], self.annotations.shape[0]]))
@@ -292,13 +297,15 @@ class GamaAnalysis():
             plt.show()
         return fig, axes
     
-    def map_results(self):
-        if self.seg_model:
-            predictions = self.segmentation
-        else:
-            predictions = self.spotting
+    def map_results(self, ann):
+        predictions = self.spotting
         
-        mAP_results = calculate_MAP(self.annotations, predictions)
+        if ann:
+            annotations = self.annotations[:, ann_encoder[ann]].reshape(-1,1)
+        else:
+            annotations = self.annotations   
+
+        mAP_results = calculate_MAP(annotations, predictions)
         return mAP_results
     
     def segmentation_evaluation(self, ann=None):
@@ -316,23 +323,32 @@ class GamaAnalysis():
     def ROC_AUC(self,error_margin=0):
         return draw_ROC_curve(self.spotting, self.annotations, error_margin=error_margin)
     
-    def all_test_games_evaluation(self, args, last_game_index=2, seg_model=True, calibrate=False, type_eval="segmentation_evaluation"):
-        all_results = np.empty((0, self.args.annotation_nr))
-        all_annotations = np.empty((0, self.args.annotation_nr))
+    def all_test_games_evaluation(self, args, last_game_index=2, seg_model=True, calibrate=False, ann=None, type_eval="segmentation_evaluation"):
+        if ann:
+            all_results = np.empty((0, 1))
+            all_annotations = np.empty((0, 1))
+        else:
+            all_results = np.empty((0, self.args.annotation_nr))
+            all_annotations = np.empty((0, self.args.annotation_nr))
 
         for i in range(last_game_index):
-            results, annotations = self.predict_game(game_index=i, seg_model=seg_model, calibrate=calibrate)
+            results, annotations = self.predict_game(game_index=i, seg_model=seg_model, calibrate=calibrate, ann=ann)
+            if ann:
+                annotations = annotations[:, ann_encoder[ann]].reshape(-1,1)
+
             all_results = np.concatenate((all_results, results), axis=0)
             all_annotations = np.concatenate((all_annotations, annotations), axis=0)
         
         if type_eval=="segmentation_evaluation":
-            return norm_evaluation_segmentation(all_annotations, all_results, args, ann=None)
+            return norm_evaluation_segmentation(all_annotations, all_results, args, ann=ann)
         elif type_eval=="map_evaluation":
             return calculate_MAP(all_annotations, all_results)
         elif type_eval=="clip_based_precision_recall":
             return precision_recall_f1_score(all_results, all_annotations, pred_threshold=0.6, error_margin=0)
         elif type_eval=="clip_based_ROC_AUC":
             return draw_ROC_curve(all_results, all_annotations, error_margin=0)
+        elif type_eval=="precision_recall_curve":
+            return draw_prec_rec_curve(all_results, all_annotations, error_margin=0, plot=False)
 
 class Evaluator():
     def __init__(self, args, model, test_loader, calibrate=True):
@@ -411,14 +427,17 @@ def calculate_MAP(annotations, predictions):
     mAP_results = np.empty((annotations.shape[1]+1))
     total_mAP = average_precision_score(annotations, predictions, average='macro')
     mAP_results[0] = total_mAP
-
-    for ann in range(annotations.shape[1]):
-        gt = annotations[:, ann]
-        pred = predictions[:, ann]
-        mAP_score = average_precision_score(gt, pred, average='macro')
-        mAP_results[ann+1] = mAP_score
     
-    return mAP_results
+    if annotations.shape[1]>1:
+        for ann in range(annotations.shape[1]):
+            gt = annotations[:, ann]
+            pred = predictions[:, ann]
+            mAP_score = average_precision_score(gt, pred, average='macro')
+            mAP_results[ann+1] = mAP_score
+        return mAP_results
+    else:
+        return total_mAP    
+    
 
 def norm_evaluation_segmentation(annotations, segmentation, args, ann=None):
     PORs = np.zeros(annotations.shape[1])
@@ -499,6 +518,33 @@ def draw_ROC_curve(results, annotations, error_margin=1):
     
     AUC = [auc(FPRs[:,i], TPRs[:,i]) for i in range(FPRs.shape[1])]
     return AUC
+
+def draw_prec_rec_curve(results, annotations, error_margin=0, plot=False):
+    precisions = []
+    recalls = []
+    
+    for threshold in range(0, 105, 5):
+        threshold/=100
+        TP, TN, FN, FP = get_event_evaluation(results, annotations, pred_threshold=threshold, error_margin=error_margin)
+        TP = np.sum(TP)
+        FN = np.sum(FN)
+        FP = np.sum(FP)
+
+        p = np.array(TP)/(np.array(TP) + np.array(FP))
+        r = np.array(TP)/(np.array(TP) + np.array(FN))
+        
+        precisions.append(p)
+        recalls.append(r)
+    
+    if plot:
+        fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+        ax.plot(precisions, recalls)
+        ax.set_title(f"Precision-Recall curve")
+        ax.set_facecolor('lightgray') 
+        ax.grid(True, color='white')
+        ax.fill_between(precisions, recalls, alpha=0.5)
+    
+    return precisions, recalls
 
 def interpolate_matrix(data):
     for ann in range(data.shape[1]):

@@ -1,0 +1,13 @@
+kloppy==2.2.2 
+matplotlib 
+numpy 
+scikit-learn 
+seaborn 
+torch 
+mplsoccer==1.2.2
+torch_geometric 
+torch-cluster 
+torch-scatter 
+torch-spline-conv 
+tqdm
+opencv-python
