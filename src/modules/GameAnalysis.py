@@ -141,7 +141,7 @@ class GamaAnalysis():
 
         # # CALIBRATION STEP
         if calibrate:
-            if self.args.annotation_nr:
+            if self.args.annotation_nr==1:
                 calibration_type = "fine_tuned"
                 calibration_model_name = f"calibrators/{calibration_type}/{self.args.focused_annotation}_calibration_{calibration_type}.pkl"
                 calibration_model = pickle.load(open(calibration_model_name, 'rb'))
@@ -272,22 +272,28 @@ class GamaAnalysis():
                 
                 if self.seg_model:
                     predictions = ax.plot(np.arange(0, int(frame_threshold)), self.segmentation[:int(frame_threshold),i], label='Prediction')
-                    ax.set_title(f"Segmentation {ann}")
+                    ax.set_title(f"Segmentation {ann}", fontsize=15)
                 else:
                     predictions = ax.plot(np.arange(0, int(frame_threshold)), self.spotting[:int(frame_threshold),i], label='Prediction')
-                    ax.set_title(f"Spotting {ann}")
-                ax.legend()
+                    ax.set_title(f"Spotting {ann}", fontsize=15)
+                ax.tick_params(axis='x', labelsize=15)
+                ax.tick_params(axis='y', labelsize=15)
+                ax.legend(fontsize=15)
         else:
             fig, axes = plt.subplots(1, 1, figsize=(10, 10))
             ann_index = ann_encoder[annotation]
             axes.plot(np.arange(0, int(frame_threshold)), self.annotations[:int(frame_threshold),ann_index], label='Annotations')
+            axes.tick_params(axis='x', labelsize=15)
+            axes.tick_params(axis='y', labelsize=15)
             
             if self.seg_model:
                 axes.plot(np.arange(0, int(frame_threshold)), self.segmentation[:int(frame_threshold),0], label='Prediction')
                 axes.set_title(f"Segmentation {ann_index}")
+    
             else:
                 axes.plot(np.arange(0, int(frame_threshold)), self.spotting[:int(frame_threshold),0], label='Prediction')
                 axes.set_title(f"Spotting {ann_index}")
+                
 
             axes.legend()
 

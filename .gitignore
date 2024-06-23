@@ -7,22 +7,10 @@
 # Additional files
 *__pycache__
 /football_games/
-/football_games_copy.zip
-/SoccerNetData/
-/SoccerNetv2-DevKit/
-/WorkJolan/
-/ActionSpotting/
-/Code/models/
-/Code/results/
-/Code/animations/
-/Code/plots/
-/sn-spotting/
-
-/Code2/results/
-/Code2/animations/
-/Code2/plots/
-/FilterNet/
+/src/results/
 /src/animations/
+/src/plots/
+
 # Icon must end with two \r
 Icon
 

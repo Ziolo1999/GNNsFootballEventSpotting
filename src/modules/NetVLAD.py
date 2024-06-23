@@ -154,12 +154,3 @@ class NetRVLAD(nn.Module):
         rvlad = F.normalize(rvlad)
 
         return rvlad
-
-
-if __name__ == "__main__":
-    vlad = NetVLAD(cluster_size=64, feature_size=512)
-    feat_in = torch.rand((3,120,512))
-    print("in", feat_in.shape)
-    feat_out = vlad(feat_in)
-    print("out", feat_out.shape)
-    print(512*64)
