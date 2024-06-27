@@ -2,7 +2,7 @@
 
 This repository contains the code and resources for my thesis project, "Graph Neural Networks for event detection in footbal" The project involves building a tool for event spotting in football matches using advanced machine learning techniques including GNNs, Context Aware Loss Function, NetVLAD, and Convolutional Neural Networks to capture both spatial and temporal information.
 
-![Animation](plots/animation.mp4)
+![Animation](plots/animation.gif)
 
 ## Overview
 
